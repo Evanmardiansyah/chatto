@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chatto Premium - Final Fix</title>
+    <title>Chatto Premium - Profile Update</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- CSS VARIABLES & DARK MODE --- */
@@ -50,13 +50,12 @@
         .icon-btn:hover { color: var(--text-primary); }
 
         .user-info-wrapper { display: flex; align-items: center; gap: 8px; }
-        .edit-name-btn { font-size: 12px; color: var(--text-secondary); cursor: pointer; opacity: 0.5; transition: 0.2s; }
-        .edit-name-btn:hover { opacity: 1; color: var(--wa-green); }
-
+        
         .chat-list { flex: 1; overflow-y: auto; }
         .chat-item { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; border-bottom: 1px solid var(--border-color); }
         .chat-item:hover { background: var(--border-color); }
         .chat-item.active { background: var(--wa-header-bg); }
+        
         .avatar { width: 45px; height: 45px; background: #dfe5e7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; color: gray; flex-shrink: 0; overflow: hidden; }
         .avatar img { width: 100%; height: 100%; object-fit: cover; } 
 
@@ -79,12 +78,22 @@
             overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; 
         }
 
+        /* Bubble Chat & Avatar */
+        .message-row { display: flex; align-items: flex-end; margin-bottom: 5px; }
+        .message-row.sent { justify-content: flex-end; }
+        .message-row.received { justify-content: flex-start; }
+        
+        /* Avatar Kecil di Samping Chat (NEW) */
+        .chat-avatar { width: 30px; height: 30px; border-radius: 50%; margin-right: 8px; overflow: hidden; background: #ddd; flex-shrink: 0; display: none; }
+        .message-row.received .chat-avatar { display: block; }
+        .chat-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
         .message {
             max-width: 65%; padding: 6px 10px 8px 10px; border-radius: 8px; font-size: 14.2px; line-height: 19px; position: relative; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); word-wrap: break-word;
             color: var(--text-primary);
         }
-        .message.sent { align-self: flex-end; background-color: var(--msg-sent); }
-        .message.received { align-self: flex-start; background-color: var(--msg-received); }
+        .message.sent { background-color: var(--msg-sent); border-top-right-radius: 0; }
+        .message.received { background-color: var(--msg-received); border-top-left-radius: 0; }
         
         .message img { 
             max-width: 250px; max-height: 250px; width: auto; height: auto;
@@ -125,8 +134,7 @@
         }
         .btn-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 24px; padding: 5px; margin-bottom: 2px; }
 
-        /* MODALS & ALERTS */
-        /* FIX: Z-Index diatur agar Alert (10002) selalu di atas Login (9999) */
+        /* Modals & Alerts */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--body-bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-primary); }
         .modal-box { background: var(--app-bg); padding: 25px; border-radius: 10px; text-align: center; width: 85%; max-width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto; }
         .modal-box h3 { margin-bottom: 15px; font-size: 18px; }
@@ -192,7 +200,7 @@
 
         <div class="modal-box" id="registerForm" style="display: none;">
             <h3>Buat Akun Baru</h3>
-            <p>Nama Lengkap & Username tidak boleh sama dengan orang lain.</p>
+            <p>Nama Lengkap & Username tidak boleh sama.</p>
             <input type="text" id="regName" placeholder="Nama Lengkap (Di Chat)">
             <input type="text" id="regUsername" placeholder="Username (Untuk Login)">
             <input type="password" id="regPassword" placeholder="Password">
@@ -205,11 +213,15 @@
         <div class="modal-box">
             <h3><i class="fas fa-cog"></i> Pengaturan</h3>
             
-            <button onclick="requestEditName()" style="background: var(--border-color); color: var(--text-primary); margin-bottom: 10px;">
+            <button onclick="requestEditName()" style="background: var(--border-color); color: var(--text-primary);">
                 <i class="fas fa-pen"></i> Ganti Nama Tampilan
             </button>
+            
+            <button onclick="changeProfilePic()" style="background: var(--border-color); color: var(--text-primary); margin-top:5px;">
+                <i class="fas fa-user-circle"></i> Ganti Foto Profil
+            </button>
 
-            <label style="display:block; text-align:left; font-size:14px; margin-top:5px;">Hapus pesan lebih dari:</label>
+            <label style="display:block; text-align:left; font-size:14px; margin-top:15px;">Hapus pesan lebih dari:</label>
             <select id="autoDeleteDays">
                 <option value="1">1 Hari (Cepat)</option>
                 <option value="3">3 Hari</option>
@@ -217,8 +229,12 @@
                 <option value="30">1 Bulan</option>
                 <option value="9999">Jangan Hapus (Manual)</option>
             </select>
+            
             <button onclick="saveSettings()">Simpan & Bersihkan DB</button>
-            <button class="btn-danger" onclick="logoutUser()"><i class="fas fa-sign-out-alt"></i> Keluar (Logout)</button>
+            
+            <button class="btn-danger" onclick="clearCache()"><i class="fas fa-trash-alt"></i> Reset / Fix Eror</button>
+            <button class="btn-danger" onclick="logoutUser()" style="margin-top:5px;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            
             <button class="btn-cancel" onclick="document.getElementById('settingsOverlay').style.display='none'">Tutup</button>
         </div>
     </div>
@@ -254,10 +270,9 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <div style="display:flex; align-items:center;">
-                    <div class="avatar"><i class="fas fa-user"></i></div>
+                    <div class="avatar"><img id="myAvatarDisplay" src="" alt="Me"></div>
                     <div class="user-info-wrapper">
                         <span id="myDisplayName" style="font-weight:bold;">Anda</span>
-                        <i class="fas fa-pen edit-name-btn" onclick="requestEditName()" title="Ganti Nama"></i>
                     </div>
                 </div>
                 <div class="header-icons">
@@ -310,9 +325,7 @@
 
     <script>
         // CONFIG FIREBASE
-        const p1 = "AIza"; 
-        const p2 = "SyBH9Udej6I9JankuJS9J57KPzn8DNUlNYA";
-        
+        const p1 = "AIza"; const p2 = "SyBH9Udej6I9JankuJS9J57KPzn8DNUlNYA";
         const firebaseConfig = {
             apiKey: p1 + p2, 
             authDomain: "chatto-82194.firebaseapp.com",
@@ -328,15 +341,19 @@
         // Vars
         let currentUser = localStorage.getItem("chatUser") || "";
         let currentUsername = localStorage.getItem("chatUsername") || "";
+        // Avatar default kalau belum diset
+        let defaultUserAvatar = "https://ui-avatars.com/api/?background=random&color=fff&name=";
+        let currentAvatar = localStorage.getItem("chatAvatar") || "";
+        
         let activeMembers = new Set();
         let currentReply = null;
         
-        // Defaults
+        // Defaults Group
         const defaultIcon = "https://ui-avatars.com/api/?name=Grup&background=0D8ABC&color=fff";
         let currentGroupName = "Grup Warga GitHub";
         let currentGroupIcon = defaultIcon;
 
-        // --- MAIN INITIALIZATION ---
+        // --- MAIN ---
         document.addEventListener("DOMContentLoaded", function() {
             if (localStorage.getItem('theme') === 'dark') {
                 document.body.classList.add('dark-mode');
@@ -346,14 +363,17 @@
 
             initGlobalGroupInfo();
 
-            // Cek Session Login
             if(currentUser && currentUsername) {
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('myDisplayName').innerText = currentUser;
+                
+                // Set Avatar Sendiri di Sidebar
+                const myAv = document.getElementById("myAvatarDisplay");
+                if(myAv) myAv.src = currentAvatar || (defaultUserAvatar + currentUser);
+
                 loadMessages();
             } else {
                 document.getElementById('loginOverlay').style.display = 'flex';
-                // Preload data for validation checks
                 loadMessages(true);
             }
 
@@ -377,72 +397,7 @@
             if(chatList) chatList.scrollTop = chatList.scrollHeight;
         }
 
-        // --- AUTH LOGIC ---
-        function showRegister() {
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('registerForm').style.display = 'block';
-        }
-        function showLogin() {
-            document.getElementById('registerForm').style.display = 'none';
-            document.getElementById('loginForm').style.display = 'block';
-        }
-
-        function authRegister() {
-            const name = document.getElementById('regName').value.trim();
-            const username = document.getElementById('regUsername').value.trim();
-            const password = document.getElementById('regPassword').value.trim();
-
-            if(!name || !username || !password) { showCustomAlert("Semua kolom wajib diisi!"); return; }
-            if(isNameTaken(name)) { showCustomAlert("Nama Tampilan '" + name + "' sudah dipakai orang lain di grup."); return; }
-
-            db.collection("users").where("username", "==", username).get().then((querySnapshot) => {
-                if(!querySnapshot.empty) {
-                    showCustomAlert("Username '" + username + "' sudah terdaftar.");
-                } else {
-                    db.collection("users").add({ name: name, username: username, password: password, joinedAt: firebase.firestore.FieldValue.serverTimestamp() })
-                    .then(() => { performLogin(name, username); })
-                    .catch(err => showCustomAlert("Error: " + err.message));
-                }
-            });
-        }
-
-        function authLogin() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-
-            if(!username || !password) { showCustomAlert("Isi username dan password!"); return; }
-
-            db.collection("users").where("username", "==", username).where("password", "==", password).get().then((querySnapshot) => {
-                if(querySnapshot.empty) {
-                    showCustomAlert("Username atau Password salah!");
-                } else {
-                    let userData = querySnapshot.docs[0].data();
-                    performLogin(userData.name, userData.username);
-                }
-            }).catch(err => showCustomAlert("Error Login: " + err.message));
-        }
-
-        function performLogin(name, username) {
-            currentUser = name;
-            currentUsername = username;
-            localStorage.setItem("chatUser", currentUser);
-            localStorage.setItem("chatUsername", currentUsername);
-            
-            document.getElementById('myDisplayName').innerText = currentUser;
-            document.getElementById('loginOverlay').style.display = 'none';
-            
-            // FIX REFRESH BUG: Paksa load message ke UI
-            loadMessages(); 
-        }
-
-        function logoutUser() {
-            if(confirm("Yakin ingin keluar akun?")) {
-                localStorage.clear();
-                window.location.reload();
-            }
-        }
-
-        // --- CUSTOM ALERTS ---
+        // --- CUSTOM ALERTS & PROMPTS ---
         function showCustomAlert(msg) {
             document.getElementById('alertMessage').innerText = msg;
             document.getElementById('customAlertOverlay').style.display = 'flex';
@@ -461,7 +416,83 @@
             if (promptCallback) promptCallback(val); closeCustomPrompt();
         });
 
-        // --- GLOBAL GROUP INFO ---
+        // --- USER PROFILE & LOGIN ---
+        function authLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            if(!username || !password) { showCustomAlert("Isi username dan password!"); return; }
+
+            db.collection("users").where("username", "==", username).where("password", "==", password).get().then((qs) => {
+                if(qs.empty) { showCustomAlert("Username atau Password salah!"); } else {
+                    let d = qs.docs[0].data(); performLogin(d.name, d.username);
+                }
+            }).catch(err => showCustomAlert("Error Login: " + err.message));
+        }
+
+        function authRegister() {
+            const name = document.getElementById('regName').value.trim();
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            if(!name || !username || !password) { showCustomAlert("Lengkapi data!"); return; }
+            if(isNameTaken(name)) { showCustomAlert("Nama sudah dipakai di grup."); return; }
+
+            db.collection("users").where("username", "==", username).get().then((qs) => {
+                if(!qs.empty) { showCustomAlert("Username sudah ada."); } else {
+                    db.collection("users").add({ name: name, username: username, password: password })
+                    .then(() => performLogin(name, username)).catch(err => showCustomAlert(err.message));
+                }
+            });
+        }
+
+        function performLogin(name, username) {
+            currentUser = name; currentUsername = username;
+            localStorage.setItem("chatUser", currentUser); localStorage.setItem("chatUsername", currentUsername);
+            document.getElementById('myDisplayName').innerText = currentUser;
+            
+            // Default avatar saat login baru
+            if(!currentAvatar) {
+                currentAvatar = defaultUserAvatar + name;
+                localStorage.setItem("chatAvatar", currentAvatar);
+            }
+            document.getElementById("myAvatarDisplay").src = currentAvatar;
+
+            document.getElementById('loginOverlay').style.display = 'none';
+            loadMessages();
+        }
+
+        function requestEditName() {
+            showCustomPrompt("Ganti Nama", "Nama baru...", (n) => {
+                if (n && n.trim() !== "") {
+                    if (isNameTaken(n.trim())) { showCustomAlert("Nama sudah dipakai."); } 
+                    else {
+                        currentUser = n.trim(); localStorage.setItem("chatUser", currentUser);
+                        document.getElementById('myDisplayName').innerText = currentUser;
+                        showCustomAlert("Nama diganti.");
+                    }
+                }
+            }, currentUser);
+        }
+
+        // --- FITUR GANTI FOTO PROFIL ---
+        function changeProfilePic() {
+            showCustomPrompt("URL Foto Profil", "Tempel link gambar...", (url) => {
+                if(url && url.trim() !== "") {
+                    currentAvatar = url.trim();
+                    localStorage.setItem("chatAvatar", currentAvatar);
+                    document.getElementById("myAvatarDisplay").src = currentAvatar;
+                    showCustomAlert("Foto profil diperbarui! Akan muncul di chat selanjutnya.");
+                }
+            }, currentAvatar);
+        }
+
+        function isNameTaken(name) {
+            const c = name.toLowerCase(); for (let m of activeMembers) { if (m.toLowerCase() === c) return true; } return false;
+        }
+
+        function logoutUser() { if(confirm("Keluar akun?")) { localStorage.clear(); window.location.reload(); } }
+        function clearCache() { if(confirm("Reset aplikasi?")) { localStorage.clear(); window.location.reload(); } }
+
+        // --- GROUP INFO (FIX LOGIC) ---
         function initGlobalGroupInfo() {
             db.collection("config").doc("groupInfo").onSnapshot((doc) => {
                 if (doc.exists) {
@@ -469,54 +500,37 @@
                     currentGroupName = data.name || "Grup Warga GitHub";
                     currentGroupIcon = data.icon || defaultIcon;
                     updateGroupUI();
-                } else {
-                    db.collection("config").doc("groupInfo").set({ name: currentGroupName, icon: currentGroupIcon });
-                    updateGroupUI();
                 }
             });
         }
+
         function editGroupInfoGlobal() {
-            showCustomPrompt("Nama Grup Baru", "Masukkan nama grup...", (newName) => {
-                if(newName && newName.trim() !== "") {
-                    showCustomPrompt("URL Foto Grup (Opsional)", "Link gambar...", (newIcon) => {
-                        let updateData = { name: newName };
-                        if (newIcon && newIcon.trim() !== "") { updateData.icon = newIcon; }
-                        db.collection("config").doc("groupInfo").set(updateData, { merge: true });
-                        document.getElementById('groupInfoOverlay').style.display='none';
-                        showCustomAlert("Info grup berhasil diperbarui!");
-                    }, currentGroupIcon);
+            // Prompt Berantai yang Benar
+            showCustomPrompt("Nama Grup Baru", "Masukkan nama...", (newName) => {
+                // Setelah nama di-ok, tanya Icon
+                if(newName) {
+                    // Delay dikit biar transisi modal enak
+                    setTimeout(() => {
+                        showCustomPrompt("URL Foto Grup (Opsional)", "Link gambar...", (newIcon) => {
+                            let data = { name: newName };
+                            if(newIcon && newIcon.trim() !== "") data.icon = newIcon;
+                            
+                            db.collection("config").doc("groupInfo").set(data, { merge: true })
+                                .then(() => {
+                                    document.getElementById('groupInfoOverlay').style.display='none';
+                                    showCustomAlert("Info Grup Diperbarui!");
+                                });
+                        }, currentGroupIcon);
+                    }, 200);
                 }
             }, currentGroupName);
         }
+
         function updateGroupUI() {
-            const textEls = [document.getElementById("headerGroupName"), document.getElementById("sidebarGroupName"), document.getElementById("modalGroupName")];
-            textEls.forEach(el => { if(el) el.innerText = currentGroupName; });
-            const imgEls = [document.getElementById("headerGroupIcon"), document.getElementById("sidebarGroupIcon"), document.getElementById("modalGroupIcon")];
-            imgEls.forEach(el => { if(el) el.src = currentGroupIcon; });
-        }
-
-        // --- USER LOGIC ---
-        function isNameTaken(name) {
-            const checkName = name.toLowerCase();
-            for (let member of activeMembers) { if (member.toLowerCase() === checkName) return true; }
-            return false;
-        }
-
-        function requestEditName() {
-            showCustomPrompt("Ganti Nama Tampilan", "Nama baru...", (newName) => {
-                if (newName && newName.trim() !== "") {
-                    const trimmedName = newName.trim();
-                    if (isNameTaken(trimmedName)) {
-                        showCustomAlert("Nama sudah dipakai orang lain!");
-                    } else {
-                        currentUser = trimmedName;
-                        localStorage.setItem("chatUser", currentUser);
-                        document.getElementById('myDisplayName').innerText = currentUser;
-                        showCustomAlert("Nama berhasil diganti jadi: " + currentUser);
-                        document.getElementById('settingsOverlay').style.display='none';
-                    }
-                }
-            }, currentUser);
+            const t = [document.getElementById("headerGroupName"), document.getElementById("sidebarGroupName"), document.getElementById("modalGroupName")];
+            t.forEach(el => { if(el) el.innerText = currentGroupName; });
+            const i = [document.getElementById("headerGroupIcon"), document.getElementById("sidebarGroupIcon"), document.getElementById("modalGroupIcon")];
+            i.forEach(el => { if(el) el.src = currentGroupIcon; });
         }
 
         // --- SETTINGS ---
@@ -524,92 +538,81 @@
         function saveSettings() {
             const days = parseInt(document.getElementById('autoDeleteDays').value);
             if (days < 9999) { runAutoCleaner(days); } 
-            else { showCustomAlert("Penyimpanan Manual Dipilih."); document.getElementById('settingsOverlay').style.display = 'none'; }
+            else { showCustomAlert("Disimpan (Manual)."); document.getElementById('settingsOverlay').style.display = 'none'; }
         }
         function runAutoCleaner(days) {
-            const btn = document.querySelector('#settingsOverlay button:not(.btn-cancel):not(.btn-danger)');
-            btn.innerText = "Sedang Membersihkan..."; btn.disabled = true;
-            const cutoffDate = new Date(); cutoffDate.setDate(cutoffDate.getDate() - days);
-            db.collection("chats").where("timestamp", "<", cutoffDate).get()
-                .then((querySnapshot) => {
-                    const batch = db.batch(); querySnapshot.forEach((doc) => batch.delete(doc.ref));
-                    return batch.commit().then(() => querySnapshot.size);
-                })
-                .then((count) => {
-                    showCustomAlert(`Berhasil! ${count} pesan lama dihapus.`);
-                    document.getElementById('settingsOverlay').style.display = 'none';
-                    btn.innerText = "Simpan & Bersihkan DB"; btn.disabled = false;
-                })
-                .catch((error) => { console.error(error); btn.disabled = false; });
+            const btn = document.querySelector('#settingsOverlay button');
+            btn.innerText = "Cleaning..."; btn.disabled = true;
+            const d = new Date(); d.setDate(d.getDate() - days);
+            db.collection("chats").where("timestamp", "<", d).get().then(qs => {
+                const batch = db.batch(); qs.forEach(doc => batch.delete(doc.ref));
+                return batch.commit().then(() => qs.size);
+            }).then(c => {
+                showCustomAlert(`${c} pesan dihapus.`); document.getElementById('settingsOverlay').style.display = 'none'; btn.innerText = "Simpan"; btn.disabled = false;
+            });
         }
 
-        // --- CHAT CORE ---
-        function loadMessages(backgroundMode = false) {
-            db.collection("chats").orderBy("timestamp", "asc")
-                .onSnapshot((snapshot) => {
-                    const chatList = document.getElementById("messagesList");
-                    if(!chatList && !backgroundMode) return;
-                    
-                    activeMembers.clear();
-                    if (!backgroundMode) chatList.innerHTML = "";
-                    
-                    snapshot.forEach((doc) => { 
-                        const data = doc.data();
-                        if(data.user) activeMembers.add(data.user);
-                        if (!backgroundMode) renderMessage(data, chatList); 
-                    });
-                    if (!backgroundMode) setTimeout(() => scrollToBottom(), 100);
+        // --- CHAT LOGIC ---
+        function loadMessages(bg = false) {
+            db.collection("chats").orderBy("timestamp", "asc").onSnapshot(snap => {
+                const list = document.getElementById("messagesList");
+                if(!list && !bg) return;
+                activeMembers.clear();
+                if(!bg) list.innerHTML = "";
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if(d.user) activeMembers.add(d.user);
+                    if(!bg) renderMessage(d, list);
                 });
+                if(!bg) setTimeout(() => scrollToBottom(), 100);
+            });
         }
 
         function renderMessage(data, container) {
             const isMe = data.user === currentUser;
-            const timeDisplay = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
-            const nameColor = isMe ? 'var(--wa-green)' : '#d64646';
+            const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
+            const color = isMe ? 'var(--wa-green)' : '#d64646';
             
-            let content = `<span style="white-space: pre-wrap;">${data.text}</span>`;
-            let rawTextForReply = data.text || ""; 
-            if (rawTextForReply.startsWith("data:image")) {
-                content = `<img src="${data.text}" alt="Gambar" onclick="openModal(this.src)">`;
+            // Handle Profile Pic User Lain
+            let avatarImg = "";
+            if (!isMe) {
+                // Gunakan avatar dari pesan jika ada, kalau tidak generate dari nama
+                let picUrl = data.avatar || (defaultUserAvatar + data.user);
+                avatarImg = `<div class="chat-avatar"><img src="${picUrl}"></div>`;
             }
+
+            let content = `<span style="white-space: pre-wrap;">${data.text}</span>`;
+            if (data.text.startsWith("data:image")) content = `<img src="${data.text}" onclick="openModal(this.src)">`;
 
             let replyHtml = "";
             if (data.reply) {
-                replyHtml = `
-                    <div class="reply-quote">
-                        <strong>${data.reply.user}</strong>
-                        <span>${data.reply.text}</span>
-                    </div>
-                `;
+                replyHtml = `<div class="reply-quote"><strong>${data.reply.user}</strong><span>${data.reply.text}</span></div>`;
             }
 
-            const bubble = `
+            // Wrapper Row untuk Layout Avatar + Bubble
+            const row = document.createElement('div');
+            row.className = `message-row ${isMe ? 'sent' : 'received'}`;
+            
+            row.innerHTML = `
+                ${avatarImg}
                 <div class="message ${isMe ? 'sent' : 'received'}">
                     ${replyHtml}
-                    <div style="font-weight:bold; color: ${nameColor}; font-size:12.5px; margin-bottom:2px;">${data.user}</div>
+                    <div style="font-weight:bold; color: ${color}; font-size:12.5px; margin-bottom:2px;">${data.user}</div>
                     ${content}
                     <div class="meta-info">
-                        ${timeDisplay}
+                        ${time}
                         ${isMe ? '<i class="fas fa-check-double" style="color:#53bdeb;"></i>' : ''}
-                        <i class="fas fa-reply reply-btn" onclick="setReply('${data.user}', '${rawTextForReply.replace(/'/g, "\\'").replace(/\n/g, " ")}')"></i>
+                        <i class="fas fa-reply reply-btn" onclick="setReply('${data.user}', 'Pesan...')"></i>
                     </div>
                 </div>
             `;
-            container.innerHTML += bubble;
-        }
+            
+            // Fix Reply Text Logic inside onclick
+            const replyBtn = row.querySelector('.reply-btn');
+            let rawText = data.text || "";
+            replyBtn.onclick = () => setReply(data.user, rawText);
 
-        function setReply(user, text) {
-            const cleanText = text.startsWith("data:image") ? "📷 Foto" : text;
-            currentReply = { user: user, text: cleanText };
-            document.getElementById("replyUser").innerText = user;
-            document.getElementById("replyText").innerText = cleanText.substring(0, 50) + (cleanText.length > 50 ? "..." : "");
-            document.getElementById("replyPreview").style.display = "flex";
-            document.getElementById("msgInput").focus();
-        }
-
-        function cancelReply() {
-            currentReply = null;
-            document.getElementById("replyPreview").style.display = "none";
+            container.appendChild(row);
         }
 
         function sendMessage() {
@@ -618,61 +621,56 @@
             if (text && text.trim() !== "") {
                 const payload = {
                     text: text, user: currentUser,
+                    avatar: currentAvatar, // Kirim avatar URL saat ini
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 if (currentReply) payload.reply = currentReply;
                 db.collection("chats").add(payload).then(() => {
-                    input.value = ""; input.style.height = 'auto'; 
-                    cancelReply();
-                    setTimeout(() => scrollToBottom(), 100);
-                }).catch((err) => { showCustomAlert("Gagal kirim: " + err.message); });
+                    input.value = ""; input.style.height = 'auto'; cancelReply(); setTimeout(() => scrollToBottom(), 100);
+                }).catch(e => showCustomAlert(e.message));
             }
         }
+
+        function setReply(user, text) {
+            const clean = text.startsWith("data:image") ? "📷 Foto" : text;
+            currentReply = { user: user, text: clean };
+            document.getElementById("replyUser").innerText = user;
+            document.getElementById("replyText").innerText = clean.substring(0, 50);
+            document.getElementById("replyPreview").style.display = "flex";
+            document.getElementById("msgInput").focus();
+        }
+        function cancelReply() { currentReply = null; document.getElementById("replyPreview").style.display = "none"; }
 
         // --- UTILS ---
         function toggleTheme() {
             document.body.classList.toggle('dark-mode');
-            const themeIcon = document.querySelector('.theme-toggle');
-            if (document.body.classList.contains('dark-mode')) {
-                localStorage.setItem('theme', 'dark');
-                if(themeIcon) themeIcon.classList.replace('fa-moon', 'fa-sun');
-            } else {
-                localStorage.setItem('theme', 'light');
-                if(themeIcon) themeIcon.classList.replace('fa-sun', 'fa-moon');
-            }
+            const t = document.querySelector('.theme-toggle');
+            if(document.body.classList.contains('dark-mode')) { localStorage.setItem('theme', 'dark'); t.classList.replace('fa-moon', 'fa-sun'); }
+            else { localStorage.setItem('theme', 'light'); t.classList.replace('fa-sun', 'fa-moon'); }
         }
         function openModal(src) { document.getElementById("img01").src = src; document.getElementById("imageModal").style.display = "flex"; }
         function closeModal() { document.getElementById("imageModal").style.display = "none"; }
         function handleImageSelect(input) {
             if (input.files && input.files[0]) {
-                const file = input.files[0]; const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image(); img.src = e.target.result;
-                    img.onload = function() {
-                        const canvas = document.createElement("canvas"); const ctx = canvas.getContext("2d");
-                        const maxWidth = 600; 
-                        let width = img.width; let height = img.height;
-                        if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
-                        canvas.width = width; canvas.height = height;
-                        ctx.drawImage(img, 0, 0, width, height);
-                        const payload = { text: canvas.toDataURL("image/jpeg", 0.7), user: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
-                        db.collection("chats").add(payload);
+                const r = new FileReader();
+                r.onload = function(e) {
+                    const i = new Image(); i.src = e.target.result;
+                    i.onload = function() {
+                        const c = document.createElement("canvas"); const x = c.getContext("2d");
+                        const m = 600; let w = i.width; let h = i.height;
+                        if (w > m) { h *= m / w; w = m; } c.width = w; c.height = h; x.drawImage(i, 0, 0, w, h);
+                        db.collection("chats").add({
+                            text: c.toDataURL("image/jpeg", 0.7), user: currentUser, avatar: currentAvatar,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
                     }
-                }
-                reader.readAsDataURL(file);
+                }; r.readAsDataURL(input.files[0]);
             }
         }
-        
         function openGroupInfo() {
-            const listContainer = document.getElementById("memberListContainer");
-            listContainer.innerHTML = "";
-            if (activeMembers.size > 0) {
-                activeMembers.forEach(member => {
-                    listContainer.innerHTML += `<div class="member-item"><i class="fas fa-user-circle"></i> ${member}</div>`;
-                });
-            } else {
-                listContainer.innerHTML = "<div style='font-size:12px; color:gray;'>Belum ada chat termuat.</div>";
-            }
+            const l = document.getElementById("memberListContainer"); l.innerHTML = "";
+            if (activeMembers.size > 0) activeMembers.forEach(m => l.innerHTML += `<div class="member-item"><i class="fas fa-user-circle"></i> ${m}</div>`);
+            else l.innerHTML = "Loading...";
             document.getElementById("groupInfoOverlay").style.display = 'flex';
         }
     </script>
