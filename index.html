@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chatto Premium - Auto Cleaner</title>
+    <title>Chatto Premium - Final</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- CSS VARIABLES & DARK MODE --- */
@@ -13,16 +13,22 @@
             --text-primary: #111b21; --text-secondary: #667781;
             --msg-sent: #d9fdd3; --msg-received: #ffffff;
             --input-bg: #ffffff; --border-color: #e9edef;
-            --wa-green: #00a884; --pattern-opacity: 0.4;
+            --wa-green: #00a884;
+            /* IMPROVEMENT: Opacity diturunkan biar lebih 'blend' kayak WA asli */
+            --pattern-opacity: 0.15; 
         }
 
         body.dark-mode {
             --body-bg: #111b21; --app-bg: #202c33;
-            --wa-header-bg: #202c33; --wa-chat-bg: #0b141a;
+            --wa-header-bg: #202c33;
+            /* IMPROVEMENT: Warna BG gelap sedikit disesuaikan */
+            --wa-chat-bg: #0d141a; 
             --text-primary: #e9edef; --text-secondary: #8696a0;
             --msg-sent: #005c4b; --msg-received: #202c33;
             --input-bg: #2a3942; --border-color: #2a3942;
-            --wa-green: #00a884; --pattern-opacity: 0.1;
+            --wa-green: #00a884;
+             /* IMPROVEMENT: Di dark mode, pattern dibuat sangat samar */
+            --pattern-opacity: 0.06;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -54,8 +60,9 @@
         .chat-area { flex: 1; display: flex; flex-direction: column; background-color: var(--wa-chat-bg); position: relative; z-index: 1; }
         .chat-area::before {
             content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            /* Link gambar tetap sama, tapi opacity diatur via CSS variable di atas */
             background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
-            background-repeat: repeat; opacity: var(--pattern-opacity); z-index: -1;
+            background-repeat: repeat; opacity: var(--pattern-opacity); z-index: -1; pointer-events: none;
         }
 
         .chat-header { background: var(--wa-header-bg); height: 60px; padding: 10px 16px; display: flex; align-items: center; border-left: 1px solid var(--border-color); z-index: 10; color: var(--text-primary); }
@@ -122,6 +129,7 @@
             
             <label style="display:block; text-align:left; font-size:14px; margin-top:15px;">Hapus pesan lebih dari:</label>
             <select id="autoDeleteDays">
+                <option value="1">1 Hari (Cepat)</option>
                 <option value="3">3 Hari</option>
                 <option value="7" selected>1 Minggu (Standar)</option>
                 <option value="30">1 Bulan</option>
