@@ -3,75 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chatto - WA Style Premium</title>
+    <title>Chatto Premium - Auto Cleaner</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- CSS VARIABLES & DARK MODE --- */
         :root {
-            /* Light Mode (Default) */
-            --body-bg: #d1d7db;
-            --app-bg: #ffffff;
-            --wa-header-bg: #f0f2f5;
-            --wa-chat-bg: #efeae2;
-            --text-primary: #111b21;
-            --text-secondary: #667781;
-            --msg-sent: #d9fdd3;
-            --msg-received: #ffffff;
-            --input-bg: #ffffff;
-            --border-color: #e9edef;
-            --wa-green: #00a884;
-            --pattern-opacity: 0.4;
+            --body-bg: #d1d7db; --app-bg: #ffffff;
+            --wa-header-bg: #f0f2f5; --wa-chat-bg: #efeae2;
+            --text-primary: #111b21; --text-secondary: #667781;
+            --msg-sent: #d9fdd3; --msg-received: #ffffff;
+            --input-bg: #ffffff; --border-color: #e9edef;
+            --wa-green: #00a884; --pattern-opacity: 0.4;
         }
 
-        /* Dark Mode Theme */
         body.dark-mode {
-            --body-bg: #111b21;
-            --app-bg: #202c33;
-            --wa-header-bg: #202c33;
-            --wa-chat-bg: #0b141a;
-            --text-primary: #e9edef;
-            --text-secondary: #8696a0;
-            --msg-sent: #005c4b;
-            --msg-received: #202c33;
-            --input-bg: #2a3942;
-            --border-color: #2a3942;
-            --wa-green: #00a884; /* Tetap hijau */
-            --pattern-opacity: 0.1; /* Pattern lebih samar di dark mode */
+            --body-bg: #111b21; --app-bg: #202c33;
+            --wa-header-bg: #202c33; --wa-chat-bg: #0b141a;
+            --text-primary: #e9edef; --text-secondary: #8696a0;
+            --msg-sent: #005c4b; --msg-received: #202c33;
+            --input-bg: #2a3942; --border-color: #2a3942;
+            --wa-green: #00a884; --pattern-opacity: 0.1;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
 
         body {
-            background-color: var(--body-bg);
-            display: flex; justify-content: center; align-items: center;
-            height: 100vh; overflow: hidden; color: var(--text-primary);
-            transition: background-color 0.3s ease;
+            background-color: var(--body-bg); display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden; color: var(--text-primary); transition: background-color 0.3s ease;
         }
 
         .app-container {
             display: flex; width: 100%; height: 100%; max-width: 1600px;
-            background: var(--app-bg); position: relative;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            background: var(--app-bg); position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
         /* Sidebar */
         .sidebar { width: 30%; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--app-bg); }
         .sidebar-header { background: var(--wa-header-bg); padding: 10px 16px; height: 60px; display: flex; align-items: center; justify-content: space-between; border-right: 1px solid var(--border-color); }
+        .header-icons { display: flex; gap: 15px; }
+        .icon-btn { cursor: pointer; color: var(--text-secondary); font-size: 18px; transition: 0.2s; }
+        .icon-btn:hover { color: var(--text-primary); }
+
         .chat-list { flex: 1; overflow-y: auto; }
         .chat-item { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; border-bottom: 1px solid var(--border-color); }
         .chat-item:hover { background: var(--border-color); }
         .chat-item.active { background: var(--wa-header-bg); }
         .avatar { width: 45px; height: 45px; background: #dfe5e7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; color: gray; flex-shrink: 0; }
 
-        /* Dark mode toggle button */
-        .theme-toggle { cursor: pointer; font-size: 20px; color: var(--text-secondary); padding: 10px; }
-        
         /* Chat Area */
-        .chat-area {
-            flex: 1; display: flex; flex-direction: column; background-color: var(--wa-chat-bg);
-            position: relative; z-index: 1;
-        }
-        /* Pattern Background dengan Opacity */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background-color: var(--wa-chat-bg); position: relative; z-index: 1; }
         .chat-area::before {
             content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
@@ -80,11 +60,8 @@
 
         .chat-header { background: var(--wa-header-bg); height: 60px; padding: 10px 16px; display: flex; align-items: center; border-left: 1px solid var(--border-color); z-index: 10; color: var(--text-primary); }
         
-        .messages-container {
-            flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth;
-        }
+        .messages-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; }
 
-        /* Bubble Chat */
         .message {
             max-width: 65%; padding: 6px 10px 8px 10px; border-radius: 8px; font-size: 14.2px; line-height: 19px; position: relative; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); word-wrap: break-word;
             color: var(--text-primary);
@@ -92,63 +69,67 @@
         .message.sent { align-self: flex-end; background-color: var(--msg-sent); }
         .message.received { align-self: flex-start; background-color: var(--msg-received); }
         
-        /* Style Gambar di Chat (Thumbnail Kecil) */
         .message img { 
-            max-width: 250px; /* Ukuran maksimal thumbnail */
-            max-height: 250px;
-            width: auto; height: auto;
-            border-radius: 8px; margin-top: 5px; cursor: pointer; 
-            transition: transform 0.2s;
+            max-width: 250px; max-height: 250px; width: auto; height: auto;
+            border-radius: 8px; margin-top: 5px; cursor: pointer; transition: transform 0.2s;
         }
         .message img:hover { transform: scale(1.02); }
 
         .meta-info { font-size: 11px; color: var(--text-secondary); float: right; margin-left: 10px; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
 
-        /* Input Area */
         .input-area { min-height: 62px; background: var(--wa-header-bg); padding: 8px 16px; display: flex; align-items: center; gap: 10px; z-index: 10; }
         .input-box { flex: 1; padding: 12px; border-radius: 8px; border: none; outline: none; background: var(--input-bg); font-size: 15px; color: var(--text-primary); }
         .btn-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 24px; padding: 5px; }
 
-        /* Login Modal */
-        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--body-bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-primary); }
-        .login-box { background: var(--app-bg); padding: 40px; border-radius: 5px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .login-box input { width: 100%; padding: 15px; margin: 20px 0; border: 1px solid var(--border-color); border-radius: 5px; background: var(--input-bg); color: var(--text-primary); }
-        .login-box button { background: var(--wa-green); color: white; border: none; padding: 15px; width: 100%; cursor: pointer; border-radius: 5px; font-weight: bold; }
+        /* Login Modal & Settings Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--body-bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-primary); }
+        .modal-box { background: var(--app-bg); padding: 30px; border-radius: 5px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .modal-box input, .modal-box select { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid var(--border-color); border-radius: 5px; background: var(--input-bg); color: var(--text-primary); }
+        .modal-box button { background: var(--wa-green); color: white; border: none; padding: 12px; width: 100%; cursor: pointer; border-radius: 5px; font-weight: bold; margin-top: 10px; }
+        .modal-box .btn-cancel { background: #d64646; margin-top: 5px; }
 
-        /* --- FITUR BARU: IMAGE MODAL (Lightbox/Zoom) --- */
-        .image-modal {
-            display: none; /* Hidden by default */
-            position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%;
-            overflow: auto; background-color: rgba(0,0,0,0.9);
-            flex-direction: column; justify-content: center; align-items: center;
-        }
-        .modal-content {
-            margin: auto; display: block; max-width: 90%; max-height: 90vh;
-            border-radius: 5px; animation: zoom 0.3s;
-        }
-        .close-modal {
-            position: absolute; top: 15px; right: 35px; color: #f1f1f1;
-            font-size: 40px; font-weight: bold; transition: 0.3s; cursor: pointer;
-        }
+        /* Image Zoom Modal */
+        .image-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.95); flex-direction: column; justify-content: center; align-items: center; }
+        .modal-content { margin: auto; display: block; max-width: 90%; max-height: 90vh; border-radius: 5px; animation: zoom 0.3s; }
+        .close-modal { position: absolute; top: 15px; right: 35px; color: #f1f1f1; font-size: 40px; font-weight: bold; transition: 0.3s; cursor: pointer; }
         @keyframes zoom { from {transform:scale(0)} to {transform:scale(1)} }
 
-        /* Mobile Responsive */
         @media (max-width: 768px) {
             .sidebar { display: none; }
             .app-container { width: 100%; height: 100vh; max-width: none; box-shadow: none; }
             .message { max-width: 85%; }
-            body.dark-mode { background-color: #111b21; } /* Fix background HP */
+            body.dark-mode { background-color: #111b21; }
         }
     </style>
 </head>
 <body>
 
-    <div id="loginOverlay">
+    <div id="loginOverlay" class="modal-overlay">
         <div style="font-size: 40px; color: var(--wa-green); margin-bottom: 20px;"><i class="fab fa-whatsapp"></i></div>
-        <div class="login-box">
+        <div class="modal-box">
             <h3>Masuk Chat</h3>
             <input type="text" id="usernameInput" placeholder="Nama kamu...">
             <button onclick="loginUser()">MASUK</button>
+        </div>
+    </div>
+
+    <div id="settingsOverlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.8);">
+        <div class="modal-box">
+            <h3><i class="fas fa-cog"></i> Pengaturan Penyimpanan</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
+                Agar database tidak penuh, atur pesan otomatis terhapus.
+            </p>
+            
+            <label style="display:block; text-align:left; font-size:14px; margin-top:15px;">Hapus pesan lebih dari:</label>
+            <select id="autoDeleteDays">
+                <option value="3">3 Hari</option>
+                <option value="7" selected>1 Minggu (Standar)</option>
+                <option value="30">1 Bulan</option>
+                <option value="9999">Jangan Hapus (Manual)</option>
+            </select>
+
+            <button onclick="saveSettings()">Simpan & Bersihkan</button>
+            <button class="btn-cancel" onclick="document.getElementById('settingsOverlay').style.display='none'">Tutup</button>
         </div>
     </div>
 
@@ -166,7 +147,10 @@
                     <div class="avatar"><i class="fas fa-user"></i></div>
                     <span id="myDisplayName" style="font-weight:bold;">Anda</span>
                 </div>
-                <i class="fas fa-moon theme-toggle" onclick="toggleTheme()" title="Ganti Tema"></i>
+                <div class="header-icons">
+                    <i class="fas fa-moon icon-btn theme-toggle" onclick="toggleTheme()" title="Mode Gelap/Terang"></i>
+                    <i class="fas fa-cog icon-btn" onclick="openSettings()" title="Pengaturan"></i>
+                </div>
             </div>
             <div class="chat-list">
                 <div class="chat-item active">
@@ -183,6 +167,7 @@
                     <div style="font-weight: bold;">Grup Warga GitHub</div>
                     <div style="font-size: 11px; color: var(--text-secondary);">Online</div>
                 </div>
+                <i class="fas fa-ellipsis-v icon-btn" onclick="openSettings()" style="margin-left: auto;"></i>
             </div>
 
             <div class="messages-container" id="messagesList"></div>
@@ -217,32 +202,29 @@
         const db = firebase.firestore();
         let currentUser = localStorage.getItem("chatUser") || "";
 
-        // --- FITUR DARK MODE ---
-        // Cek settingan terakhir pengguna
+        // --- DARK MODE LOGIC ---
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark-mode');
             document.querySelector('.theme-toggle').classList.replace('fa-moon', 'fa-sun');
         }
-
         function toggleTheme() {
             document.body.classList.toggle('dark-mode');
             const themeIcon = document.querySelector('.theme-toggle');
             if (document.body.classList.contains('dark-mode')) {
                 localStorage.setItem('theme', 'dark');
-                themeIcon.classList.replace('fa-moon', 'fa-sun'); // Ganti ikon jadi matahari
+                themeIcon.classList.replace('fa-moon', 'fa-sun');
             } else {
                 localStorage.setItem('theme', 'light');
-                themeIcon.classList.replace('fa-sun', 'fa-moon'); // Ganti ikon jadi bulan
+                themeIcon.classList.replace('fa-sun', 'fa-moon');
             }
         }
-        // -----------------------
 
+        // --- LOGIN LOGIC ---
         if(currentUser) {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('myDisplayName').innerText = currentUser;
             loadMessages();
         }
-
         function loginUser() {
             const name = document.getElementById('usernameInput').value;
             if(name.trim()) {
@@ -254,6 +236,60 @@
             } else { alert("Isi nama dulu bos!"); }
         }
 
+        // --- AUTO DELETE / SETTINGS LOGIC ---
+        function openSettings() {
+            document.getElementById('settingsOverlay').style.display = 'flex';
+        }
+
+        function saveSettings() {
+            const days = parseInt(document.getElementById('autoDeleteDays').value);
+            if (days < 9999) {
+                runAutoCleaner(days);
+            } else {
+                alert("Penyimpanan Manual Dipilih. Tidak ada pesan yang dihapus.");
+                document.getElementById('settingsOverlay').style.display = 'none';
+            }
+        }
+
+        // FUNGSI PEMBERSIH DATABASE
+        function runAutoCleaner(days) {
+            const btn = document.querySelector('#settingsOverlay button');
+            btn.innerText = "Sedang Membersihkan...";
+            btn.disabled = true;
+
+            // Hitung tanggal batas (Sekarang - Hari yg dipilih)
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+
+            // Cari pesan yang lebih tua dari cutoffDate
+            db.collection("chats")
+                .where("timestamp", "<", cutoffDate)
+                .get()
+                .then((querySnapshot) => {
+                    const batch = db.batch(); // Pakai batch biar cepat
+                    querySnapshot.forEach((doc) => {
+                        batch.delete(doc.ref);
+                    });
+
+                    // Eksekusi Hapus
+                    return batch.commit().then(() => {
+                        return querySnapshot.size; // Return jumlah yang dihapus
+                    });
+                })
+                .then((count) => {
+                    alert(`Berhasil! ${count} pesan lama telah dihapus untuk menghemat penyimpanan.`);
+                    document.getElementById('settingsOverlay').style.display = 'none';
+                    btn.innerText = "Simpan & Bersihkan";
+                    btn.disabled = false;
+                })
+                .catch((error) => {
+                    console.error("Error cleaning:", error);
+                    alert("Gagal membersihkan database. Cek console log.");
+                    btn.disabled = false;
+                });
+        }
+
+        // --- CHAT LOGIC ---
         function loadMessages() {
             db.collection("chats").orderBy("timestamp", "asc")
                 .onSnapshot((snapshot) => {
@@ -267,12 +303,10 @@
         function renderMessage(data, container) {
             const isMe = data.user === currentUser;
             const timeDisplay = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
-            // Warna nama menyesuaikan dark mode via CSS Variable
-            const nameColor = isMe ? 'var(--wa-green)' : '#d64646'; 
+            const nameColor = isMe ? 'var(--wa-green)' : '#d64646';
             
             let content = `<span>${data.text}</span>`;
             if (data.text.startsWith("data:image")) {
-                // --- UPDATE: Tambah 'onclick' agar gambar bisa di-zoom ---
                 content = `<img src="${data.text}" alt="Gambar" onclick="openModal(this.src)">`;
             }
 
@@ -299,18 +333,13 @@
         }
         document.getElementById("msgInput").addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
 
-        // --- FITUR IMAGE ZOOM (MODAL) ---
+        // --- IMAGE UTILS ---
         function openModal(src) {
-            const modal = document.getElementById("imageModal");
-            const modalImg = document.getElementById("img01");
-            modal.style.display = "flex";
-            modalImg.src = src;
+            document.getElementById("img01").src = src;
+            document.getElementById("imageModal").style.display = "flex";
         }
-        function closeModal() {
-            document.getElementById("imageModal").style.display = "none";
-        }
+        function closeModal() { document.getElementById("imageModal").style.display = "none"; }
 
-        // Kompres & Kirim Gambar Base64
         function handleImageSelect(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0]; const reader = new FileReader();
