@@ -144,6 +144,7 @@
             justify-content: flex-end;
             align-items: center;
             gap: 4px;
+            min-width: 60px; /* Biar jam ga kepotong */
         }
 
         /* Input Area */
@@ -251,7 +252,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
-        // 1. CONFIG FIREBASE (PUNYA AGAN SUDAH SAYA MASUKKAN DISINI)
+        // 1. CONFIG FIREBASE KAMU
         const firebaseConfig = {
             apiKey: "AIzaSyBH9Udej6I9JankuJS9J57KPzn8DNUlNYA",
             authDomain: "chatto-82194.firebaseapp.com",
@@ -261,12 +262,11 @@
             appId: "1:169590873334:web:3a8d4581b10aa88096a0d7"
         };
 
-        // 2. INISIALISASI DATABASE
+        // 2. INISIALISASI
         try {
             if (!firebase.apps.length) {
                 firebase.initializeApp(firebaseConfig);
             }
-            // Mencegah error duplikasi inisialisasi
         } catch (e) {
             console.error("Firebase init error", e);
         }
@@ -287,6 +287,28 @@
             }
         }
 
+        // FORMAT TANGGAL ALA WA
+        function formatWaTime(timestamp) {
+            // Kalau timestamp null (baru kirim), pakai waktu sekarang
+            let date = timestamp ? timestamp.toDate() : new Date();
+            let now = new Date();
+
+            // Cek apakah hari ini?
+            let isToday = date.getDate() === now.getDate() &&
+                          date.getMonth() === now.getMonth() &&
+                          date.getFullYear() === now.getFullYear();
+
+            let timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            if (isToday) {
+                return timeStr; // Cuma jam (Contoh: 14:30)
+            } else {
+                // Tanggal/Bulan/Tahun Jam (Contoh: 26/12/2025 14:30)
+                let dateStr = date.toLocaleDateString([], {day: '2-digit', month: '2-digit', year: 'numeric'});
+                return `${dateStr} ${timeStr}`;
+            }
+        }
+
         // LOAD PESAN
         function loadMessages() {
             db.collection("chats").orderBy("timestamp", "asc")
@@ -298,18 +320,20 @@
                         const data = doc.data();
                         const isMe = data.user === currentUser;
                         
-                        // FIX: Cek timestamp biar ga error "Invalid Date"
-                        let timeString = "...";
-                        if (data.timestamp) {
-                            timeString = new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                        }
+                        // Panggil fungsi format waktu canggih
+                        const timeDisplay = formatWaTime(data.timestamp);
+
+                        // Tentukan warna nama (Saya = Hijau Tua, Orang Lain = Merah)
+                        const nameColor = isMe ? '#064c41' : '#d64646';
 
                         const bubble = `
                             <div class="message ${isMe ? 'sent' : 'received'}">
-                                ${!isMe ? `<div style="font-weight:bold; color: #d64646; font-size:12px; margin-bottom:2px;">${data.user}</div>` : ''}
+                                <div style="font-weight:bold; color: ${nameColor}; font-size:12px; margin-bottom:2px;">
+                                    ${data.user}
+                                </div>
                                 ${data.text}
                                 <div class="meta-info">
-                                    ${timeString}
+                                    ${timeDisplay}
                                     ${isMe ? '<i class="fas fa-check-double" style="color: #53bdeb;"></i>' : ''}
                                 </div>
                             </div>
@@ -334,7 +358,6 @@
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 }).catch((error) => {
                     console.error("Error sending message: ", error);
-                    alert("Gagal kirim pesan. Cek koneksi atau setting database.");
                 });
                 input.value = ""; 
             }
