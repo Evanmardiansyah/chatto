@@ -15,6 +15,7 @@
             --input-bg: #ffffff; --border-color: #e9edef;
             --wa-green: #00a884;
             --pattern-opacity: 0.15; 
+            --reply-bg: rgba(0,0,0,0.05); /* Warna background kutipan reply */
         }
 
         body.dark-mode {
@@ -26,6 +27,7 @@
             --input-bg: #2a3942; --border-color: #2a3942;
             --wa-green: #00a884;
             --pattern-opacity: 0.06;
+            --reply-bg: rgba(0,0,0,0.2);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -47,7 +49,6 @@
         .icon-btn { cursor: pointer; color: var(--text-secondary); font-size: 18px; transition: 0.2s; }
         .icon-btn:hover { color: var(--text-primary); }
 
-        /* Style Baru untuk Edit Nama */
         .user-info-wrapper { display: flex; align-items: center; gap: 8px; }
         .edit-name-btn { font-size: 12px; color: var(--text-secondary); cursor: pointer; opacity: 0.5; transition: 0.2s; }
         .edit-name-btn:hover { opacity: 1; color: var(--wa-green); }
@@ -85,6 +86,32 @@
 
         .meta-info { font-size: 11px; color: var(--text-secondary); float: right; margin-left: 10px; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
 
+        /* --- FITUR REPLY (STYLING) --- */
+        .reply-btn {
+            margin-left: 10px; cursor: pointer; opacity: 0; transition: opacity 0.2s; color: var(--text-secondary);
+        }
+        .message:hover .reply-btn { opacity: 1; } /* Muncul pas di-hover (Desktop) */
+        
+        /* Box Reply di dalam Bubble Chat */
+        .reply-quote {
+            background: var(--reply-bg); border-left: 4px solid var(--wa-green);
+            padding: 5px 8px; border-radius: 4px; margin-bottom: 5px; font-size: 12px; cursor: pointer;
+            opacity: 0.8;
+        }
+        .reply-quote strong { display: block; color: var(--wa-green); margin-bottom: 2px; }
+
+        /* Bar Preview Reply di atas Input */
+        .reply-preview-bar {
+            background: var(--wa-header-bg); padding: 8px 16px; 
+            border-left: 5px solid var(--wa-green); border-top: 1px solid var(--border-color);
+            display: none; justify-content: space-between; align-items: center;
+            font-size: 13px; color: var(--text-secondary);
+            animation: slideUp 0.2s ease-out;
+        }
+        @keyframes slideUp { from {transform: translateY(100%);} to {transform: translateY(0);} }
+
+        /* --------------------------- */
+
         .input-area { min-height: 62px; background: var(--wa-header-bg); padding: 8px 16px; display: flex; align-items: center; gap: 10px; z-index: 10; }
         .input-box { flex: 1; padding: 12px; border-radius: 8px; border: none; outline: none; background: var(--input-bg); font-size: 15px; color: var(--text-primary); }
         .btn-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 24px; padding: 5px; }
@@ -107,6 +134,7 @@
             .app-container { width: 100%; height: 100vh; max-width: none; box-shadow: none; }
             .message { max-width: 85%; }
             body.dark-mode { background-color: #111b21; }
+            .reply-btn { opacity: 1; } /* Tombol reply selalu muncul di HP */
         }
     </style>
 </head>
@@ -184,6 +212,14 @@
 
             <div class="messages-container" id="messagesList"></div>
 
+            <div class="reply-preview-bar" id="replyPreview">
+                <div style="display:flex; flex-direction:column;">
+                    <span style="color:var(--wa-green); font-weight:bold; font-size:12px;" id="replyUser">Nama</span>
+                    <span style="color:var(--text-secondary);" id="replyText">Isi pesan...</span>
+                </div>
+                <i class="fas fa-times" style="cursor:pointer; font-size:16px;" onclick="cancelReply()"></i>
+            </div>
+
             <div class="input-area">
                 <button class="btn-icon" onclick="document.getElementById('imageInput').click()">
                     <i class="fas fa-camera"></i>
@@ -213,6 +249,9 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         let currentUser = localStorage.getItem("chatUser") || "";
+        
+        // VARIABLE UNTUK REPLY
+        let currentReply = null;
 
         // --- DARK MODE LOGIC ---
         if (localStorage.getItem('theme') === 'dark') {
@@ -231,7 +270,7 @@
             }
         }
 
-        // --- LOGIN & EDIT NAME LOGIC ---
+        // --- LOGIN & EDIT NAME ---
         if(currentUser) {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('myDisplayName').innerText = currentUser;
@@ -247,8 +286,6 @@
                 loadMessages();
             } else { alert("Isi nama dulu bos!"); }
         }
-
-        // FUNGSI GANTI NAMA (NEW FEATURE)
         function editName() {
             const newName = prompt("Masukkan nama baru kamu:", currentUser);
             if (newName && newName.trim() !== "") {
@@ -259,53 +296,46 @@
             }
         }
 
-        // --- AUTO DELETE / SETTINGS LOGIC ---
-        function openSettings() {
-            document.getElementById('settingsOverlay').style.display = 'flex';
-        }
-
+        // --- AUTO DELETE / SETTINGS ---
+        function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
         function saveSettings() {
             const days = parseInt(document.getElementById('autoDeleteDays').value);
-            if (days < 9999) {
-                runAutoCleaner(days);
-            } else {
-                alert("Penyimpanan Manual Dipilih. Tidak ada pesan yang dihapus.");
-                document.getElementById('settingsOverlay').style.display = 'none';
-            }
+            if (days < 9999) { runAutoCleaner(days); } 
+            else { alert("Penyimpanan Manual Dipilih."); document.getElementById('settingsOverlay').style.display = 'none'; }
         }
-
-        // FUNGSI PEMBERSIH DATABASE
         function runAutoCleaner(days) {
             const btn = document.querySelector('#settingsOverlay button');
-            btn.innerText = "Sedang Membersihkan...";
-            btn.disabled = true;
-
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - days);
-
-            db.collection("chats")
-                .where("timestamp", "<", cutoffDate)
-                .get()
+            btn.innerText = "Sedang Membersihkan..."; btn.disabled = true;
+            const cutoffDate = new Date(); cutoffDate.setDate(cutoffDate.getDate() - days);
+            db.collection("chats").where("timestamp", "<", cutoffDate).get()
                 .then((querySnapshot) => {
-                    const batch = db.batch(); 
-                    querySnapshot.forEach((doc) => {
-                        batch.delete(doc.ref);
-                    });
-                    return batch.commit().then(() => {
-                        return querySnapshot.size; 
-                    });
+                    const batch = db.batch(); querySnapshot.forEach((doc) => batch.delete(doc.ref));
+                    return batch.commit().then(() => querySnapshot.size);
                 })
                 .then((count) => {
-                    alert(`Berhasil! ${count} pesan lama telah dihapus untuk menghemat penyimpanan.`);
+                    alert(`Berhasil! ${count} pesan lama dihapus.`);
                     document.getElementById('settingsOverlay').style.display = 'none';
-                    btn.innerText = "Simpan & Bersihkan";
-                    btn.disabled = false;
+                    btn.innerText = "Simpan & Bersihkan"; btn.disabled = false;
                 })
-                .catch((error) => {
-                    console.error("Error cleaning:", error);
-                    alert("Gagal membersihkan database. Cek console log.");
-                    btn.disabled = false;
-                });
+                .catch((error) => { console.error(error); btn.disabled = false; });
+        }
+
+        // --- REPLY FUNCTIONALITY (NEW) ---
+        function setReply(user, text) {
+            // Kalau gambarnya base64, kita ganti teksnya jadi 'Foto' biar ga panjang
+            const cleanText = text.startsWith("data:image") ? "📷 Foto" : text;
+            
+            currentReply = { user: user, text: cleanText };
+            
+            document.getElementById("replyUser").innerText = user;
+            document.getElementById("replyText").innerText = cleanText.substring(0, 50) + (cleanText.length > 50 ? "..." : "");
+            document.getElementById("replyPreview").style.display = "flex";
+            document.getElementById("msgInput").focus();
+        }
+
+        function cancelReply() {
+            currentReply = null;
+            document.getElementById("replyPreview").style.display = "none";
         }
 
         // --- CHAT LOGIC ---
@@ -324,16 +354,34 @@
             const timeDisplay = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
             const nameColor = isMe ? 'var(--wa-green)' : '#d64646';
             
+            // Konten Utama
             let content = `<span>${data.text}</span>`;
+            // Cek Gambar
+            let rawTextForReply = data.text; // Simpan text asli untuk reply function
             if (data.text.startsWith("data:image")) {
                 content = `<img src="${data.text}" alt="Gambar" onclick="openModal(this.src)">`;
             }
 
+            // Cek Apakah Pesan Ini Adalah Balasan (Reply)?
+            let replyHtml = "";
+            if (data.reply) {
+                replyHtml = `
+                    <div class="reply-quote">
+                        <strong>${data.reply.user}</strong>
+                        <span>${data.reply.text}</span>
+                    </div>
+                `;
+            }
+
             const bubble = `
                 <div class="message ${isMe ? 'sent' : 'received'}">
-                    <div style="font-weight:bold; color: ${nameColor}; font-size:12.5px; margin-bottom:2px;">${data.user}</div>
+                    ${replyHtml} <div style="font-weight:bold; color: ${nameColor}; font-size:12.5px; margin-bottom:2px;">${data.user}</div>
                     ${content}
-                    <div class="meta-info">${timeDisplay} ${isMe ? '<i class="fas fa-check-double" style="color:#53bdeb;"></i>' : ''}</div>
+                    <div class="meta-info">
+                        ${timeDisplay}
+                        ${isMe ? '<i class="fas fa-check-double" style="color:#53bdeb;"></i>' : ''}
+                        <i class="fas fa-reply reply-btn" onclick="setReply('${data.user}', '${rawTextForReply.replace(/'/g, "\\'")}')"></i>
+                    </div>
                 </div>
             `;
             container.innerHTML += bubble;
@@ -343,22 +391,29 @@
             const input = document.getElementById("msgInput");
             const text = customText || input.value;
             if (text.trim() !== "") {
-                db.collection("chats").add({
+                const payload = {
                     text: text, user: currentUser,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                };
+
+                // Kalau sedang me-reply, masukkan data reply ke database
+                if (currentReply) {
+                    payload.reply = currentReply;
+                }
+
+                db.collection("chats").add(payload);
+                
                 if(!customText) input.value = ""; 
+                cancelReply(); // Reset reply setelah kirim
             }
         }
         document.getElementById("msgInput").addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
 
         // --- IMAGE UTILS ---
         function openModal(src) {
-            document.getElementById("img01").src = src;
-            document.getElementById("imageModal").style.display = "flex";
+            document.getElementById("img01").src = src; document.getElementById("imageModal").style.display = "flex";
         }
         function closeModal() { document.getElementById("imageModal").style.display = "none"; }
-
         function handleImageSelect(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0]; const reader = new FileReader();
