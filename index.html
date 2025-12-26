@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chatto Premium - Secure Login</title>
+    <title>Chatto Premium - Final Fix</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- CSS VARIABLES & DARK MODE --- */
@@ -34,8 +34,7 @@
 
         body {
             background-color: var(--body-bg); display: flex; justify-content: center; align-items: center;
-            height: 100dvh; 
-            overflow: hidden; color: var(--text-primary); transition: background-color 0.3s ease;
+            height: 100dvh; overflow: hidden; color: var(--text-primary); transition: background-color 0.3s ease;
         }
 
         .app-container {
@@ -126,7 +125,8 @@
         }
         .btn-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 24px; padding: 5px; margin-bottom: 2px; }
 
-        /* Modals & Alerts */
+        /* MODALS & ALERTS */
+        /* FIX: Z-Index diatur agar Alert (10002) selalu di atas Login (9999) */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--body-bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-primary); }
         .modal-box { background: var(--app-bg); padding: 25px; border-radius: 10px; text-align: center; width: 85%; max-width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto; }
         .modal-box h3 { margin-bottom: 15px; font-size: 18px; }
@@ -136,7 +136,6 @@
         .modal-box .btn-cancel { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); margin-top: 8px; }
         .modal-box .btn-danger { background: #d64646; color: white; margin-top: 15px; }
 
-        /* Toggle Login/Register */
         .auth-toggle { margin-top: 15px; font-size: 13px; color: var(--wa-green); cursor: pointer; text-decoration: underline; }
         
         /* Member List Style */
@@ -162,7 +161,7 @@
 </head>
 <body>
 
-    <div id="customPromptOverlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.6);">
+    <div id="customPromptOverlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.6); z-index: 10002;">
         <div class="modal-box">
             <h3 id="promptTitle">Judul</h3>
             <p id="promptMessage" style="display:none;"></p>
@@ -172,7 +171,7 @@
         </div>
     </div>
 
-    <div id="customAlertOverlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.6);">
+    <div id="customAlertOverlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.6); z-index: 10002;">
         <div class="modal-box">
             <h3>Info</h3>
             <p id="alertMessage">Pesan Alert</p>
@@ -310,13 +309,12 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
-        // --- CONFIG FIREBASE (FIX GITHUB ALERT) ---
-        // Kita pecah string API Key supaya GitHub bot tidak membacanya sebagai secret
+        // CONFIG FIREBASE
         const p1 = "AIza"; 
         const p2 = "SyBH9Udej6I9JankuJS9J57KPzn8DNUlNYA";
         
         const firebaseConfig = {
-            apiKey: p1 + p2, // Digabung kembali saat runtime
+            apiKey: p1 + p2, 
             authDomain: "chatto-82194.firebaseapp.com",
             projectId: "chatto-82194",
             storageBucket: "chatto-82194.firebasestorage.app",
@@ -329,7 +327,7 @@
 
         // Vars
         let currentUser = localStorage.getItem("chatUser") || "";
-        let currentUsername = localStorage.getItem("chatUsername") || ""; // New for login persistence
+        let currentUsername = localStorage.getItem("chatUsername") || "";
         let activeMembers = new Set();
         let currentReply = null;
         
@@ -354,7 +352,6 @@
                 document.getElementById('myDisplayName').innerText = currentUser;
                 loadMessages();
             } else {
-                // If not logged in, show login form
                 document.getElementById('loginOverlay').style.display = 'flex';
                 // Preload data for validation checks
                 loadMessages(true);
@@ -380,7 +377,7 @@
             if(chatList) chatList.scrollTop = chatList.scrollHeight;
         }
 
-        // --- AUTH LOGIC (LOGIN / REGISTER) ---
+        // --- AUTH LOGIC ---
         function showRegister() {
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('registerForm').style.display = 'block';
@@ -390,41 +387,25 @@
             document.getElementById('loginForm').style.display = 'block';
         }
 
-        // FUNGSI REGISTER
         function authRegister() {
             const name = document.getElementById('regName').value.trim();
             const username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value.trim();
 
-            if(!name || !username || !password) {
-                showCustomAlert("Semua kolom wajib diisi!"); return;
-            }
+            if(!name || !username || !password) { showCustomAlert("Semua kolom wajib diisi!"); return; }
+            if(isNameTaken(name)) { showCustomAlert("Nama Tampilan '" + name + "' sudah dipakai orang lain di grup."); return; }
 
-            // Cek apakah Nama Tampilan sudah dipakai di chat?
-            if(isNameTaken(name)) {
-                showCustomAlert("Nama Tampilan '" + name + "' sudah dipakai orang lain di grup. Ganti nama lain."); return;
-            }
-
-            // Cek Database User apakah Username sudah ada?
             db.collection("users").where("username", "==", username).get().then((querySnapshot) => {
                 if(!querySnapshot.empty) {
-                    showCustomAlert("Username '" + username + "' sudah terdaftar. Silakan Login atau pakai username lain.");
+                    showCustomAlert("Username '" + username + "' sudah terdaftar.");
                 } else {
-                    // Buat User Baru
-                    db.collection("users").add({
-                        name: name,
-                        username: username,
-                        password: password, // Note: In production, hash this!
-                        joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }).then(() => {
-                        // Auto Login
-                        performLogin(name, username);
-                    }).catch(err => showCustomAlert("Error Register: " + err.message));
+                    db.collection("users").add({ name: name, username: username, password: password, joinedAt: firebase.firestore.FieldValue.serverTimestamp() })
+                    .then(() => { performLogin(name, username); })
+                    .catch(err => showCustomAlert("Error: " + err.message));
                 }
             });
         }
 
-        // FUNGSI LOGIN
         function authLogin() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
@@ -435,7 +416,6 @@
                 if(querySnapshot.empty) {
                     showCustomAlert("Username atau Password salah!");
                 } else {
-                    // Login Sukses
                     let userData = querySnapshot.docs[0].data();
                     performLogin(userData.name, userData.username);
                 }
@@ -451,7 +431,8 @@
             document.getElementById('myDisplayName').innerText = currentUser;
             document.getElementById('loginOverlay').style.display = 'none';
             
-            if(activeMembers.size === 0) loadMessages();
+            // FIX REFRESH BUG: Paksa load message ke UI
+            loadMessages(); 
         }
 
         function logoutUser() {
@@ -461,7 +442,7 @@
             }
         }
 
-        // --- CUSTOM ALERTS & PROMPTS ---
+        // --- CUSTOM ALERTS ---
         function showCustomAlert(msg) {
             document.getElementById('alertMessage').innerText = msg;
             document.getElementById('customAlertOverlay').style.display = 'flex';
@@ -526,10 +507,8 @@
                 if (newName && newName.trim() !== "") {
                     const trimmedName = newName.trim();
                     if (isNameTaken(trimmedName)) {
-                        showCustomAlert("Nama sudah dipakai orang lain di grup!");
+                        showCustomAlert("Nama sudah dipakai orang lain!");
                     } else {
-                        // Update di User DB juga agar konsisten
-                        // (Untuk simpelnya kita update lokal & chat next time pakai nama baru)
                         currentUser = trimmedName;
                         localStorage.setItem("chatUser", currentUser);
                         document.getElementById('myDisplayName').innerText = currentUser;
@@ -540,7 +519,7 @@
             }, currentUser);
         }
 
-        // --- SETTINGS & CLEANER ---
+        // --- SETTINGS ---
         function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
         function saveSettings() {
             const days = parseInt(document.getElementById('autoDeleteDays').value);
@@ -570,8 +549,10 @@
                 .onSnapshot((snapshot) => {
                     const chatList = document.getElementById("messagesList");
                     if(!chatList && !backgroundMode) return;
+                    
                     activeMembers.clear();
                     if (!backgroundMode) chatList.innerHTML = "";
+                    
                     snapshot.forEach((doc) => { 
                         const data = doc.data();
                         if(data.user) activeMembers.add(data.user);
@@ -681,6 +662,19 @@
                 reader.readAsDataURL(file);
             }
         }
+        
+        function openGroupInfo() {
+            const listContainer = document.getElementById("memberListContainer");
+            listContainer.innerHTML = "";
+            if (activeMembers.size > 0) {
+                activeMembers.forEach(member => {
+                    listContainer.innerHTML += `<div class="member-item"><i class="fas fa-user-circle"></i> ${member}</div>`;
+                });
+            } else {
+                listContainer.innerHTML = "<div style='font-size:12px; color:gray;'>Belum ada chat termuat.</div>";
+            }
+            document.getElementById("groupInfoOverlay").style.display = 'flex';
+        }
     </script>
 </body>
-    </html>
+</html>
