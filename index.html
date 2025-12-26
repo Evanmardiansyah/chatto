@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chatto Premium - Mobile Fix</title>
+    <title>Chatto Premium - UX Fix</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- CSS VARIABLES & DARK MODE --- */
@@ -34,8 +34,7 @@
 
         body {
             background-color: var(--body-bg); display: flex; justify-content: center; align-items: center;
-            /* FIX MOBILE: Pakai dvh (Dynamic Viewport Height) biar ga kepotong browser bar */
-            height: 100dvh; 
+            height: 100dvh; /* Dynamic Height for Mobile */
             overflow: hidden; color: var(--text-primary); transition: background-color 0.3s ease;
         }
 
@@ -76,7 +75,6 @@
             z-index: 10; color: var(--text-primary); cursor: pointer;
         }
         
-        /* FIX SCROLL: Tambah padding bottom biar chat terakhir ga ketutupan input */
         .messages-container { 
             flex: 1; padding: 20px; padding-bottom: 30px; 
             overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; 
@@ -114,25 +112,34 @@
         }
         @keyframes slideUp { from {transform: translateY(100%);} to {transform: translateY(0);} }
 
-        /* Input Area Fix Mobile - Hapus Sticky, Pakai Flex Normal */
+        /* Input Area Fix - TEXTAREA UPDATE */
         .input-area { 
             min-height: 62px; background: var(--wa-header-bg); padding: 8px 16px; 
-            display: flex; align-items: center; gap: 10px; z-index: 100; flex-shrink: 0;
+            display: flex; align-items: flex-end; /* Align bottom biar rapi pas expand */
+            gap: 10px; z-index: 100; flex-shrink: 0;
             padding-bottom: max(8px, env(safe-area-inset-bottom));
         }
+        /* Style Textarea biar mirip Input tapi bisa expand */
         .input-box { 
-            flex: 1; padding: 12px; border-radius: 8px; border: none; outline: none; 
-            background: var(--input-bg); font-size: 16px; color: var(--text-primary); 
+            flex: 1; padding: 12px; border-radius: 12px; border: none; outline: none; 
+            background: var(--input-bg); font-size: 16px; color: var(--text-primary);
+            resize: none; /* Gaboleh resize manual */
+            max-height: 120px; /* Batas tinggi maksimal */
+            min-height: 24px;
+            overflow-y: auto; /* Scroll kalo kepanjangan */
+            font-family: inherit;
         }
-        .btn-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 24px; padding: 5px; }
+        .btn-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 24px; padding: 5px; margin-bottom: 2px; }
 
-        /* Modals */
+        /* Modals & CUSTOM ALERTS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--body-bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-primary); }
-        .modal-box { background: var(--app-bg); padding: 30px; border-radius: 5px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-height: 80vh; overflow-y: auto; }
-        .modal-box input, .modal-box select { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid var(--border-color); border-radius: 5px; background: var(--input-bg); color: var(--text-primary); }
-        .modal-box button { background: var(--wa-green); color: white; border: none; padding: 12px; width: 100%; cursor: pointer; border-radius: 5px; font-weight: bold; margin-top: 10px; }
-        .modal-box .btn-cancel { background: #667781; margin-top: 5px; }
-        .modal-box .btn-danger { background: #d64646; margin-top: 15px; }
+        .modal-box { background: var(--app-bg); padding: 25px; border-radius: 10px; text-align: center; width: 85%; max-width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto; }
+        .modal-box h3 { margin-bottom: 15px; font-size: 18px; }
+        .modal-box p { font-size: 14px; margin-bottom: 15px; line-height: 1.4; }
+        .modal-box input, .modal-box select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border-color); border-radius: 5px; background: var(--input-bg); color: var(--text-primary); font-size: 16px; }
+        .modal-box button { background: var(--wa-green); color: white; border: none; padding: 12px; width: 100%; cursor: pointer; border-radius: 5px; font-weight: bold; margin-top: 10px; font-size: 14px; }
+        .modal-box .btn-cancel { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); margin-top: 8px; }
+        .modal-box .btn-danger { background: #d64646; color: white; margin-top: 15px; }
         
         /* Member List Style */
         .member-list { text-align: left; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px; }
@@ -157,10 +164,29 @@
 </head>
 <body>
 
+    <div id="customPromptOverlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.6);">
+        <div class="modal-box">
+            <h3 id="promptTitle">Judul</h3>
+            <p id="promptMessage" style="display:none;"></p>
+            <input type="text" id="promptInput" autocomplete="off">
+            <button id="promptConfirmBtn">OK</button>
+            <button class="btn-cancel" onclick="closeCustomPrompt()">Batal</button>
+        </div>
+    </div>
+
+    <div id="customAlertOverlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.6);">
+        <div class="modal-box">
+            <h3>Info</h3>
+            <p id="alertMessage">Pesan Alert</p>
+            <button onclick="document.getElementById('customAlertOverlay').style.display='none'">Tutup</button>
+        </div>
+    </div>
+
     <div id="loginOverlay" class="modal-overlay">
-        <div style="font-size: 40px; color: var(--wa-green); margin-bottom: 20px;"><i class="fab fa-whatsapp"></i></div>
+        <div style="font-size: 50px; color: var(--wa-green); margin-bottom: 20px;"><i class="fab fa-whatsapp"></i></div>
         <div class="modal-box">
             <h3>Masuk Chat</h3>
+            <p style="color: gray;">Masukkan nama panggilan unik Anda.</p>
             <input type="text" id="usernameInput" placeholder="Nama kamu...">
             <button onclick="loginUser()">MASUK</button>
         </div>
@@ -169,9 +195,11 @@
     <div id="settingsOverlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.8);">
         <div class="modal-box">
             <h3><i class="fas fa-cog"></i> Pengaturan</h3>
-            <button onclick="editName()" style="background: var(--border-color); color: var(--text-primary); margin-bottom: 10px;">
+            
+            <button onclick="requestEditName()" style="background: var(--border-color); color: var(--text-primary); margin-bottom: 10px;">
                 <i class="fas fa-pen"></i> Ganti Nama Saya
             </button>
+
             <label style="display:block; text-align:left; font-size:14px; margin-top:5px;">Hapus pesan lebih dari:</label>
             <select id="autoDeleteDays">
                 <option value="1">1 Hari (Cepat)</option>
@@ -181,7 +209,7 @@
                 <option value="9999">Jangan Hapus (Manual)</option>
             </select>
             <button onclick="saveSettings()">Simpan & Bersihkan DB</button>
-            <button class="btn-danger" onclick="clearCache()"><i class="fas fa-trash-alt"></i> Reset / Fix Eror</button>
+            <button class="btn-danger" onclick="clearCache()"><i class="fas fa-trash-alt"></i> Reset Aplikasi</button>
             <button class="btn-cancel" onclick="document.getElementById('settingsOverlay').style.display='none'">Tutup</button>
         </div>
     </div>
@@ -220,7 +248,7 @@
                     <div class="avatar"><i class="fas fa-user"></i></div>
                     <div class="user-info-wrapper">
                         <span id="myDisplayName" style="font-weight:bold;">Anda</span>
-                        <i class="fas fa-pen edit-name-btn" onclick="editName()" title="Ganti Nama"></i>
+                        <i class="fas fa-pen edit-name-btn" onclick="requestEditName()" title="Ganti Nama"></i>
                     </div>
                 </div>
                 <div class="header-icons">
@@ -260,7 +288,7 @@
                 <button class="btn-icon" onclick="document.getElementById('imageInput').click()">
                     <i class="fas fa-camera"></i>
                 </button>
-                <input type="text" class="input-box" id="msgInput" placeholder="Ketik pesan..." autocomplete="off">
+                <textarea class="input-box" id="msgInput" rows="1" placeholder="Ketik pesan..."></textarea>
                 <button class="btn-icon" onclick="sendMessage()">
                     <i class="fas fa-paper-plane" style="color: var(--wa-green);"></i>
                 </button>
@@ -272,7 +300,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
-        // CONFIG FIREBASE
+        // --- CONFIG FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyBH9Udej6I9JankuJS9J57KPzn8DNUlNYA",
             authDomain: "chatto-82194.firebaseapp.com",
@@ -295,7 +323,7 @@
         let currentGroupName = "Grup Warga GitHub";
         let currentGroupIcon = defaultIcon;
 
-        // --- MAIN ---
+        // --- MAIN INITIALIZATION ---
         document.addEventListener("DOMContentLoaded", function() {
             if (localStorage.getItem('theme') === 'dark') {
                 document.body.classList.add('dark-mode');
@@ -309,16 +337,32 @@
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('myDisplayName').innerText = currentUser;
                 loadMessages();
+            } else {
+                // Pre-load messages to populate activeMembers set for unique name check
+                loadMessages(true); 
             }
 
             const inputMsg = document.getElementById("msgInput");
             if(inputMsg) {
-                // Focus listener untuk scroll ke bawah saat keyboard muncul di HP
+                // Auto Resize Textarea logic
+                inputMsg.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = (this.scrollHeight) + 'px';
+                    if(this.value === '') this.style.height = 'auto';
+                });
+
+                // Handle Enter Key (Shift+Enter for new line)
+                inputMsg.addEventListener("keypress", (e) => { 
+                    if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault(); // Prevent new line
+                        sendMessage(); 
+                        inputMsg.style.height = 'auto'; // Reset height
+                    }
+                });
+                
+                // Focus scroll fix
                 inputMsg.addEventListener("focus", () => {
                     setTimeout(() => scrollToBottom(), 300);
-                });
-                inputMsg.addEventListener("keypress", (e) => { 
-                    if (e.key === "Enter") sendMessage(); 
                 });
             }
         });
@@ -327,6 +371,34 @@
             const chatList = document.getElementById("messagesList");
             if(chatList) chatList.scrollTop = chatList.scrollHeight;
         }
+
+        // --- CUSTOM ALERTS & PROMPTS (PENGGANTI BAWAAN BROWSER) ---
+        function showCustomAlert(msg) {
+            document.getElementById('alertMessage').innerText = msg;
+            document.getElementById('customAlertOverlay').style.display = 'flex';
+        }
+
+        let promptCallback = null;
+        function showCustomPrompt(title, placeholder, callback, existingValue = "") {
+            document.getElementById('promptTitle').innerText = title;
+            const input = document.getElementById('promptInput');
+            input.placeholder = placeholder;
+            input.value = existingValue;
+            promptCallback = callback;
+            document.getElementById('customPromptOverlay').style.display = 'flex';
+            input.focus();
+        }
+
+        function closeCustomPrompt() {
+            document.getElementById('customPromptOverlay').style.display = 'none';
+            promptCallback = null;
+        }
+
+        document.getElementById('promptConfirmBtn').addEventListener('click', () => {
+            const val = document.getElementById('promptInput').value;
+            if (promptCallback) promptCallback(val);
+            closeCustomPrompt();
+        });
 
         // --- GLOBAL GROUP INFO ---
         function initGlobalGroupInfo() {
@@ -338,23 +410,24 @@
                         currentGroupIcon = data.icon || defaultIcon;
                         updateGroupUI();
                     } else {
-                        db.collection("config").doc("groupInfo").set({
-                            name: currentGroupName, icon: currentGroupIcon
-                        });
+                        db.collection("config").doc("groupInfo").set({ name: currentGroupName, icon: currentGroupIcon });
                         updateGroupUI();
                     }
-                }, (error) => console.error(error));
+                });
         }
 
         function editGroupInfoGlobal() {
-            const newName = prompt("Nama Grup Baru (Akan berubah untuk semua orang):", currentGroupName);
-            if (newName) {
-                const newIcon = prompt("Link URL Foto Grup Baru (Kosongkan jika tidak ingin ubah):", currentGroupIcon);
-                let updateData = { name: newName };
-                if (newIcon && newIcon.trim() !== "") { updateData.icon = newIcon; }
-                db.collection("config").doc("groupInfo").set(updateData, { merge: true });
-                document.getElementById('groupInfoOverlay').style.display='none';
-            }
+            showCustomPrompt("Nama Grup Baru", "Masukkan nama grup...", (newName) => {
+                if(newName && newName.trim() !== "") {
+                    showCustomPrompt("URL Foto Grup (Opsional)", "Link gambar...", (newIcon) => {
+                        let updateData = { name: newName };
+                        if (newIcon && newIcon.trim() !== "") { updateData.icon = newIcon; }
+                        db.collection("config").doc("groupInfo").set(updateData, { merge: true });
+                        document.getElementById('groupInfoOverlay').style.display='none';
+                        showCustomAlert("Info grup berhasil diperbarui!");
+                    }, currentGroupIcon);
+                }
+            }, currentGroupName);
         }
 
         function updateGroupUI() {
@@ -364,99 +437,107 @@
             imgEls.forEach(el => { if(el) el.src = currentGroupIcon; });
         }
 
-        // --- UTILS ---
-        function clearCache() {
-            if(confirm("Apakah Anda yakin ingin reset aplikasi? Nama dan pengaturan lokal akan dihapus.")) {
-                localStorage.clear(); window.location.reload();
+        // --- LOGIN & USER LOGIC ---
+        function isNameTaken(name) {
+            // Case insensitive check
+            const checkName = name.toLowerCase();
+            for (let member of activeMembers) {
+                if (member.toLowerCase() === checkName) return true;
             }
+            return false;
         }
 
         function loginUser() {
             const input = document.getElementById('usernameInput');
-            if(!input) return;
-            const name = input.value;
-            if(name && name.trim().length > 0) {
-                currentUser = name.trim();
-                localStorage.setItem("chatUser", currentUser);
-                document.getElementById('myDisplayName').innerText = currentUser;
-                document.getElementById('loginOverlay').style.display = 'none';
-                loadMessages();
-            } else { alert("Isi nama dulu bos!"); }
+            const name = input.value.trim();
+            
+            if (!name) { 
+                showCustomAlert("Isi nama dulu bos!"); 
+                return; 
+            }
+
+            if (isNameTaken(name)) {
+                showCustomAlert("Nama '" + name + "' sudah dipakai orang lain. Pilih nama lain!");
+                return;
+            }
+
+            currentUser = name;
+            localStorage.setItem("chatUser", currentUser);
+            document.getElementById('myDisplayName').innerText = currentUser;
+            document.getElementById('loginOverlay').style.display = 'none';
+            // Reload message to ensure sync, though handled in init
+            if (activeMembers.size === 0) loadMessages(); 
         }
 
-        function editName() {
-            const newName = prompt("Masukkan nama baru kamu:", currentUser);
-            if (newName && newName.trim() !== "") {
-                currentUser = newName.trim();
-                localStorage.setItem("chatUser", currentUser);
-                document.getElementById('myDisplayName').innerText = currentUser;
-                alert("Nama berhasil diganti jadi: " + currentUser);
+        function requestEditName() {
+            showCustomPrompt("Ganti Nama", "Nama baru...", (newName) => {
+                if (newName && newName.trim() !== "") {
+                    const trimmedName = newName.trim();
+                    if (isNameTaken(trimmedName)) {
+                        showCustomAlert("Nama sudah dipakai orang lain!");
+                    } else {
+                        currentUser = trimmedName;
+                        localStorage.setItem("chatUser", currentUser);
+                        document.getElementById('myDisplayName').innerText = currentUser;
+                        showCustomAlert("Nama berhasil diganti jadi: " + currentUser);
+                        document.getElementById('settingsOverlay').style.display='none';
+                    }
+                }
+            }, currentUser);
+        }
+
+        function clearCache() {
+            if(confirm("Yakin reset aplikasi?")) {
+                localStorage.clear(); window.location.reload();
             }
         }
 
+        // --- SETTINGS & CLEANER ---
         function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
         
         function saveSettings() {
             const days = parseInt(document.getElementById('autoDeleteDays').value);
             if (days < 9999) { runAutoCleaner(days); } 
-            else { alert("Penyimpanan Manual Dipilih."); document.getElementById('settingsOverlay').style.display = 'none'; }
+            else { showCustomAlert("Penyimpanan Manual Dipilih."); document.getElementById('settingsOverlay').style.display = 'none'; }
         }
 
         function runAutoCleaner(days) {
             const btn = document.querySelector('#settingsOverlay button:not(.btn-cancel):not(.btn-danger)');
             btn.innerText = "Sedang Membersihkan..."; btn.disabled = true;
             const cutoffDate = new Date(); cutoffDate.setDate(cutoffDate.getDate() - days);
+            
             db.collection("chats").where("timestamp", "<", cutoffDate).get()
                 .then((querySnapshot) => {
                     const batch = db.batch(); querySnapshot.forEach((doc) => batch.delete(doc.ref));
                     return batch.commit().then(() => querySnapshot.size);
                 })
                 .then((count) => {
-                    alert(`Berhasil! ${count} pesan lama dihapus.`);
+                    showCustomAlert(`Berhasil! ${count} pesan lama dihapus.`);
                     document.getElementById('settingsOverlay').style.display = 'none';
                     btn.innerText = "Simpan & Bersihkan DB"; btn.disabled = false;
                 })
-                .catch((error) => { console.error(error); alert("Gagal: " + error.message); btn.disabled = false; });
+                .catch((error) => { console.error(error); btn.disabled = false; });
         }
 
-        function openGroupInfo() {
-            const listContainer = document.getElementById("memberListContainer");
-            listContainer.innerHTML = "";
-            if (activeMembers.size > 0) {
-                activeMembers.forEach(member => {
-                    listContainer.innerHTML += `<div class="member-item"><i class="fas fa-user-circle"></i> ${member}</div>`;
-                });
-            } else { listContainer.innerHTML = "<div style='font-size:12px; color:gray;'>Belum ada chat termuat.</div>"; }
-            document.getElementById("groupInfoOverlay").style.display = 'flex';
-        }
-
-        function setReply(user, text) {
-            const cleanText = text.startsWith("data:image") ? "📷 Foto" : text;
-            currentReply = { user: user, text: cleanText };
-            document.getElementById("replyUser").innerText = user;
-            document.getElementById("replyText").innerText = cleanText.substring(0, 50) + (cleanText.length > 50 ? "..." : "");
-            document.getElementById("replyPreview").style.display = "flex";
-            document.getElementById("msgInput").focus();
-        }
-
-        function cancelReply() {
-            currentReply = null;
-            document.getElementById("replyPreview").style.display = "none";
-        }
-
-        function loadMessages() {
+        // --- CHAT CORE ---
+        function loadMessages(backgroundMode = false) {
             db.collection("chats").orderBy("timestamp", "asc")
                 .onSnapshot((snapshot) => {
                     const chatList = document.getElementById("messagesList");
-                    if(!chatList) return;
-                    chatList.innerHTML = "";
+                    if(!chatList && !backgroundMode) return;
+                    
+                    // Reset Active Members untuk Check Nama Unik
                     activeMembers.clear();
+                    
+                    if (!backgroundMode) chatList.innerHTML = "";
+                    
                     snapshot.forEach((doc) => { 
                         const data = doc.data();
                         if(data.user) activeMembers.add(data.user);
-                        renderMessage(data, chatList); 
+                        if (!backgroundMode) renderMessage(data, chatList); 
                     });
-                    setTimeout(() => scrollToBottom(), 100);
+                    
+                    if (!backgroundMode) setTimeout(() => scrollToBottom(), 100);
                 });
         }
 
@@ -465,7 +546,7 @@
             const timeDisplay = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
             const nameColor = isMe ? 'var(--wa-green)' : '#d64646';
             
-            let content = `<span>${data.text}</span>`;
+            let content = `<span style="white-space: pre-wrap;">${data.text}</span>`; // Pre-wrap handles newline
             let rawTextForReply = data.text || ""; 
             if (rawTextForReply.startsWith("data:image")) {
                 content = `<img src="${data.text}" alt="Gambar" onclick="openModal(this.src)">`;
@@ -489,16 +570,30 @@
                     <div class="meta-info">
                         ${timeDisplay}
                         ${isMe ? '<i class="fas fa-check-double" style="color:#53bdeb;"></i>' : ''}
-                        <i class="fas fa-reply reply-btn" onclick="setReply('${data.user}', '${rawTextForReply.replace(/'/g, "\\'")}')"></i>
+                        <i class="fas fa-reply reply-btn" onclick="setReply('${data.user}', '${rawTextForReply.replace(/'/g, "\\'").replace(/\n/g, " ")}')"></i>
                     </div>
                 </div>
             `;
             container.innerHTML += bubble;
         }
 
-        function sendMessage(customText = null) {
+        function setReply(user, text) {
+            const cleanText = text.startsWith("data:image") ? "📷 Foto" : text;
+            currentReply = { user: user, text: cleanText };
+            document.getElementById("replyUser").innerText = user;
+            document.getElementById("replyText").innerText = cleanText.substring(0, 50) + (cleanText.length > 50 ? "..." : "");
+            document.getElementById("replyPreview").style.display = "flex";
+            document.getElementById("msgInput").focus();
+        }
+
+        function cancelReply() {
+            currentReply = null;
+            document.getElementById("replyPreview").style.display = "none";
+        }
+
+        function sendMessage() {
             const input = document.getElementById("msgInput");
-            const text = customText || input.value;
+            const text = input.value; // Textarea value
             if (text && text.trim() !== "") {
                 const payload = {
                     text: text, user: currentUser,
@@ -506,13 +601,15 @@
                 };
                 if (currentReply) payload.reply = currentReply;
                 db.collection("chats").add(payload).then(() => {
-                    if(!customText) input.value = ""; 
+                    input.value = ""; 
+                    input.style.height = 'auto'; // Reset height
                     cancelReply();
                     setTimeout(() => scrollToBottom(), 100);
-                }).catch((err) => { alert("Gagal kirim: " + err.message); });
+                }).catch((err) => { showCustomAlert("Gagal kirim: " + err.message); });
             }
         }
 
+        // --- UTILS ---
         function toggleTheme() {
             document.body.classList.toggle('dark-mode');
             const themeIcon = document.querySelector('.theme-toggle');
@@ -524,7 +621,6 @@
                 if(themeIcon) themeIcon.classList.replace('fa-sun', 'fa-moon');
             }
         }
-
         function openModal(src) { document.getElementById("img01").src = src; document.getElementById("imageModal").style.display = "flex"; }
         function closeModal() { document.getElementById("imageModal").style.display = "none"; }
         function handleImageSelect(input) {
@@ -539,7 +635,9 @@
                         if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
                         canvas.width = width; canvas.height = height;
                         ctx.drawImage(img, 0, 0, width, height);
-                        sendMessage(canvas.toDataURL("image/jpeg", 0.7));
+                        // Send image as msg
+                        const payload = { text: canvas.toDataURL("image/jpeg", 0.7), user: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+                        db.collection("chats").add(payload);
                     }
                 }
                 reader.readAsDataURL(file);
