@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chatto Premium - Global Fix</title>
+    <title>Chatto Premium - Mobile Fix</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- CSS VARIABLES & DARK MODE --- */
@@ -34,7 +34,9 @@
 
         body {
             background-color: var(--body-bg); display: flex; justify-content: center; align-items: center;
-            height: 100vh; overflow: hidden; color: var(--text-primary); transition: background-color 0.3s ease;
+            /* FIX MOBILE: Pakai dvh (Dynamic Viewport Height) biar ga kepotong browser bar */
+            height: 100dvh; 
+            overflow: hidden; color: var(--text-primary); transition: background-color 0.3s ease;
         }
 
         .app-container {
@@ -74,7 +76,11 @@
             z-index: 10; color: var(--text-primary); cursor: pointer;
         }
         
-        .messages-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; }
+        /* FIX SCROLL: Tambah padding bottom biar chat terakhir ga ketutupan input */
+        .messages-container { 
+            flex: 1; padding: 20px; padding-bottom: 30px; 
+            overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; 
+        }
 
         .message {
             max-width: 65%; padding: 6px 10px 8px 10px; border-radius: 8px; font-size: 14.2px; line-height: 19px; position: relative; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); word-wrap: break-word;
@@ -108,12 +114,11 @@
         }
         @keyframes slideUp { from {transform: translateY(100%);} to {transform: translateY(0);} }
 
-        /* Input Area Fix Mobile - Ensure it stays visible */
+        /* Input Area Fix Mobile - Hapus Sticky, Pakai Flex Normal */
         .input-area { 
             min-height: 62px; background: var(--wa-header-bg); padding: 8px 16px; 
             display: flex; align-items: center; gap: 10px; z-index: 100; flex-shrink: 0;
             padding-bottom: max(8px, env(safe-area-inset-bottom));
-            position: sticky; bottom: 0; /* Pastikan nempel bawah */
         }
         .input-box { 
             flex: 1; padding: 12px; border-radius: 8px; border: none; outline: none; 
@@ -142,7 +147,7 @@
 
         @media (max-width: 768px) {
             .sidebar { display: none; }
-            .app-container { width: 100%; height: 100vh; max-width: none; box-shadow: none; }
+            .app-container { width: 100%; height: 100dvh; max-width: none; box-shadow: none; }
             .message { max-width: 85%; }
             body.dark-mode { background-color: #111b21; }
             .reply-btn { opacity: 1; }
@@ -164,11 +169,9 @@
     <div id="settingsOverlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.8);">
         <div class="modal-box">
             <h3><i class="fas fa-cog"></i> Pengaturan</h3>
-            
             <button onclick="editName()" style="background: var(--border-color); color: var(--text-primary); margin-bottom: 10px;">
                 <i class="fas fa-pen"></i> Ganti Nama Saya
             </button>
-
             <label style="display:block; text-align:left; font-size:14px; margin-top:5px;">Hapus pesan lebih dari:</label>
             <select id="autoDeleteDays">
                 <option value="1">1 Hari (Cepat)</option>
@@ -178,11 +181,7 @@
                 <option value="9999">Jangan Hapus (Manual)</option>
             </select>
             <button onclick="saveSettings()">Simpan & Bersihkan DB</button>
-            
-            <button class="btn-danger" onclick="clearCache()">
-                <i class="fas fa-trash-alt"></i> Reset / Fix Eror
-            </button>
-
+            <button class="btn-danger" onclick="clearCache()"><i class="fas fa-trash-alt"></i> Reset / Fix Eror</button>
             <button class="btn-cancel" onclick="document.getElementById('settingsOverlay').style.display='none'">Tutup</button>
         </div>
     </div>
@@ -273,7 +272,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
-        // --- CONFIG FIREBASE ---
+        // CONFIG FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyBH9Udej6I9JankuJS9J57KPzn8DNUlNYA",
             authDomain: "chatto-82194.firebaseapp.com",
@@ -296,7 +295,7 @@
         let currentGroupName = "Grup Warga GitHub";
         let currentGroupIcon = defaultIcon;
 
-        // --- MAIN INITIALIZATION ---
+        // --- MAIN ---
         document.addEventListener("DOMContentLoaded", function() {
             if (localStorage.getItem('theme') === 'dark') {
                 document.body.classList.add('dark-mode');
@@ -304,7 +303,6 @@
                 if(toggle) toggle.classList.replace('fa-moon', 'fa-sun');
             }
 
-            // LISTEN GRUP INFO DARI DATABASE (GLOBAL)
             initGlobalGroupInfo();
 
             if(currentUser) {
@@ -315,15 +313,23 @@
 
             const inputMsg = document.getElementById("msgInput");
             if(inputMsg) {
+                // Focus listener untuk scroll ke bawah saat keyboard muncul di HP
+                inputMsg.addEventListener("focus", () => {
+                    setTimeout(() => scrollToBottom(), 300);
+                });
                 inputMsg.addEventListener("keypress", (e) => { 
                     if (e.key === "Enter") sendMessage(); 
                 });
             }
         });
 
-        // --- GLOBAL GROUP INFO LOGIC (FIX UTAMA) ---
+        function scrollToBottom() {
+            const chatList = document.getElementById("messagesList");
+            if(chatList) chatList.scrollTop = chatList.scrollHeight;
+        }
+
+        // --- GLOBAL GROUP INFO ---
         function initGlobalGroupInfo() {
-            // Kita simpan info grup di koleksi khusus 'config' dokumen 'groupInfo'
             db.collection("config").doc("groupInfo")
                 .onSnapshot((doc) => {
                     if (doc.exists) {
@@ -332,36 +338,22 @@
                         currentGroupIcon = data.icon || defaultIcon;
                         updateGroupUI();
                     } else {
-                        // Kalau belum ada di database, buat default
                         db.collection("config").doc("groupInfo").set({
-                            name: currentGroupName,
-                            icon: currentGroupIcon
+                            name: currentGroupName, icon: currentGroupIcon
                         });
                         updateGroupUI();
                     }
-                }, (error) => {
-                    console.error("Error fetching group info:", error);
-                    updateGroupUI(); // Fallback
-                });
+                }, (error) => console.error(error));
         }
 
         function editGroupInfoGlobal() {
             const newName = prompt("Nama Grup Baru (Akan berubah untuk semua orang):", currentGroupName);
             if (newName) {
                 const newIcon = prompt("Link URL Foto Grup Baru (Kosongkan jika tidak ingin ubah):", currentGroupIcon);
-                
                 let updateData = { name: newName };
                 if (newIcon && newIcon.trim() !== "") { updateData.icon = newIcon; }
-
-                // Simpan ke Database, bukan LocalStorage
-                db.collection("config").doc("groupInfo").set(updateData, { merge: true })
-                    .then(() => {
-                        alert("Info grup berhasil diperbarui untuk semua anggota!");
-                        document.getElementById('groupInfoOverlay').style.display='none';
-                    })
-                    .catch((error) => {
-                        alert("Gagal update grup: " + error.message);
-                    });
+                db.collection("config").doc("groupInfo").set(updateData, { merge: true });
+                document.getElementById('groupInfoOverlay').style.display='none';
             }
         }
 
@@ -372,15 +364,13 @@
             imgEls.forEach(el => { if(el) el.src = currentGroupIcon; });
         }
 
-        // --- CLEAR CACHE ---
+        // --- UTILS ---
         function clearCache() {
-            if(confirm("Apakah Anda yakin ingin reset aplikasi? Nama dan pengaturan lokal akan dihapus (Chat tetap aman).")) {
-                localStorage.clear();
-                window.location.reload();
+            if(confirm("Apakah Anda yakin ingin reset aplikasi? Nama dan pengaturan lokal akan dihapus.")) {
+                localStorage.clear(); window.location.reload();
             }
         }
 
-        // --- FUNGSI LOGIN ---
         function loginUser() {
             const input = document.getElementById('usernameInput');
             if(!input) return;
@@ -404,23 +394,18 @@
             }
         }
 
-        // --- SETTINGS ---
         function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
         
         function saveSettings() {
             const days = parseInt(document.getElementById('autoDeleteDays').value);
             if (days < 9999) { runAutoCleaner(days); } 
-            else { 
-                alert("Penyimpanan Manual Dipilih."); 
-                document.getElementById('settingsOverlay').style.display = 'none'; 
-            }
+            else { alert("Penyimpanan Manual Dipilih."); document.getElementById('settingsOverlay').style.display = 'none'; }
         }
 
         function runAutoCleaner(days) {
             const btn = document.querySelector('#settingsOverlay button:not(.btn-cancel):not(.btn-danger)');
             btn.innerText = "Sedang Membersihkan..."; btn.disabled = true;
             const cutoffDate = new Date(); cutoffDate.setDate(cutoffDate.getDate() - days);
-            
             db.collection("chats").where("timestamp", "<", cutoffDate).get()
                 .then((querySnapshot) => {
                     const batch = db.batch(); querySnapshot.forEach((doc) => batch.delete(doc.ref));
@@ -431,12 +416,9 @@
                     document.getElementById('settingsOverlay').style.display = 'none';
                     btn.innerText = "Simpan & Bersihkan DB"; btn.disabled = false;
                 })
-                .catch((error) => { 
-                    console.error(error); alert("Gagal: " + error.message); btn.disabled = false; 
-                });
+                .catch((error) => { console.error(error); alert("Gagal: " + error.message); btn.disabled = false; });
         }
 
-        // --- GRUP MEMBER LIST ---
         function openGroupInfo() {
             const listContainer = document.getElementById("memberListContainer");
             listContainer.innerHTML = "";
@@ -444,13 +426,10 @@
                 activeMembers.forEach(member => {
                     listContainer.innerHTML += `<div class="member-item"><i class="fas fa-user-circle"></i> ${member}</div>`;
                 });
-            } else {
-                listContainer.innerHTML = "<div style='font-size:12px; color:gray;'>Belum ada chat termuat.</div>";
-            }
+            } else { listContainer.innerHTML = "<div style='font-size:12px; color:gray;'>Belum ada chat termuat.</div>"; }
             document.getElementById("groupInfoOverlay").style.display = 'flex';
         }
 
-        // --- CHAT & REPLY ---
         function setReply(user, text) {
             const cleanText = text.startsWith("data:image") ? "📷 Foto" : text;
             currentReply = { user: user, text: cleanText };
@@ -472,13 +451,12 @@
                     if(!chatList) return;
                     chatList.innerHTML = "";
                     activeMembers.clear();
-                    
                     snapshot.forEach((doc) => { 
                         const data = doc.data();
                         if(data.user) activeMembers.add(data.user);
                         renderMessage(data, chatList); 
                     });
-                    setTimeout(() => { chatList.scrollTop = chatList.scrollHeight; }, 100);
+                    setTimeout(() => scrollToBottom(), 100);
                 });
         }
 
@@ -527,15 +505,14 @@
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 if (currentReply) payload.reply = currentReply;
-
                 db.collection("chats").add(payload).then(() => {
                     if(!customText) input.value = ""; 
                     cancelReply();
+                    setTimeout(() => scrollToBottom(), 100);
                 }).catch((err) => { alert("Gagal kirim: " + err.message); });
             }
         }
 
-        // --- UTILS ---
         function toggleTheme() {
             document.body.classList.toggle('dark-mode');
             const themeIcon = document.querySelector('.theme-toggle');
@@ -547,6 +524,7 @@
                 if(themeIcon) themeIcon.classList.replace('fa-sun', 'fa-moon');
             }
         }
+
         function openModal(src) { document.getElementById("img01").src = src; document.getElementById("imageModal").style.display = "flex"; }
         function closeModal() { document.getElementById("imageModal").style.display = "none"; }
         function handleImageSelect(input) {
