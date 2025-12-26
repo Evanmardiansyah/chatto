@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chatto Premium - Profile Update</title>
+    <title>Chatto Premium - Ultimate</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- CSS VARIABLES & DARK MODE --- */
@@ -13,7 +13,7 @@
             --text-primary: #111b21; --text-secondary: #667781;
             --msg-sent: #d9fdd3; --msg-received: #ffffff;
             --input-bg: #ffffff; --border-color: #e9edef;
-            --wa-green: #00a884;
+            --wa-green: #00a884; --wa-blue-tick: #53bdeb;
             --pattern-opacity: 0.15; 
             --reply-bg: rgba(0,0,0,0.05);
         }
@@ -50,14 +50,15 @@
         .icon-btn:hover { color: var(--text-primary); }
 
         .user-info-wrapper { display: flex; align-items: center; gap: 8px; }
-        
         .chat-list { flex: 1; overflow-y: auto; }
         .chat-item { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; border-bottom: 1px solid var(--border-color); }
         .chat-item:hover { background: var(--border-color); }
         .chat-item.active { background: var(--wa-header-bg); }
-        
-        .avatar { width: 45px; height: 45px; background: #dfe5e7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; color: gray; flex-shrink: 0; overflow: hidden; }
+        .avatar { width: 45px; height: 45px; background: #dfe5e7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; color: gray; flex-shrink: 0; overflow: hidden; position: relative; }
         .avatar img { width: 100%; height: 100%; object-fit: cover; } 
+        
+        /* Online Dot */
+        .online-dot { position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; background: #25d366; border-radius: 50%; border: 2px solid var(--app-bg); display: block; }
 
         /* Chat Area */
         .chat-area { flex: 1; display: flex; flex-direction: column; background-color: var(--wa-chat-bg); position: relative; z-index: 1; }
@@ -78,12 +79,9 @@
             overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; 
         }
 
-        /* Bubble Chat & Avatar */
         .message-row { display: flex; align-items: flex-end; margin-bottom: 5px; }
         .message-row.sent { justify-content: flex-end; }
         .message-row.received { justify-content: flex-start; }
-        
-        /* Avatar Kecil di Samping Chat (NEW) */
         .chat-avatar { width: 30px; height: 30px; border-radius: 50%; margin-right: 8px; overflow: hidden; background: #ddd; flex-shrink: 0; display: none; }
         .message-row.received .chat-avatar { display: block; }
         .chat-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -95,63 +93,49 @@
         .message.sent { background-color: var(--msg-sent); border-top-right-radius: 0; }
         .message.received { background-color: var(--msg-received); border-top-left-radius: 0; }
         
-        .message img { 
-            max-width: 250px; max-height: 250px; width: auto; height: auto;
-            border-radius: 8px; margin-top: 5px; cursor: pointer; transition: transform 0.2s;
-        }
+        .message img { max-width: 250px; max-height: 250px; width: auto; height: auto; border-radius: 8px; margin-top: 5px; cursor: pointer; transition: transform 0.2s; }
         .message img:hover { transform: scale(1.02); }
+        /* Audio Player Style */
+        .message audio { max-width: 200px; margin-top: 5px; height: 30px; }
 
         .meta-info { font-size: 11px; color: var(--text-secondary); float: right; margin-left: 10px; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+        .tick-icon { color: var(--text-secondary); font-size: 10px; }
+        .tick-icon.read { color: var(--wa-blue-tick); }
 
-        /* Reply Styles */
+        /* Reply */
         .reply-btn { margin-left: 10px; cursor: pointer; opacity: 0; transition: opacity 0.2s; color: var(--text-secondary); }
         .message:hover .reply-btn { opacity: 1; } 
-        .reply-quote {
-            background: var(--reply-bg); border-left: 4px solid var(--wa-green);
-            padding: 5px 8px; border-radius: 4px; margin-bottom: 5px; font-size: 12px; cursor: pointer; opacity: 0.8;
-        }
+        .reply-quote { background: var(--reply-bg); border-left: 4px solid var(--wa-green); padding: 5px 8px; border-radius: 4px; margin-bottom: 5px; font-size: 12px; cursor: pointer; opacity: 0.8; }
         .reply-quote strong { display: block; color: var(--wa-green); margin-bottom: 2px; }
-        .reply-preview-bar {
-            background: var(--wa-header-bg); padding: 8px 16px; 
-            border-left: 5px solid var(--wa-green); border-top: 1px solid var(--border-color);
-            display: none; justify-content: space-between; align-items: center;
-            font-size: 13px; color: var(--text-secondary);
-            animation: slideUp 0.2s ease-out;
-        }
+        .reply-preview-bar { background: var(--wa-header-bg); padding: 8px 16px; border-left: 5px solid var(--wa-green); border-top: 1px solid var(--border-color); display: none; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-secondary); animation: slideUp 0.2s ease-out; }
         @keyframes slideUp { from {transform: translateY(100%);} to {transform: translateY(0);} }
 
-        /* Input Area Fix */
-        .input-area { 
-            min-height: 62px; background: var(--wa-header-bg); padding: 8px 16px; 
-            display: flex; align-items: flex-end; 
-            gap: 10px; z-index: 100; flex-shrink: 0;
-            padding-bottom: max(8px, env(safe-area-inset-bottom));
-        }
-        .input-box { 
-            flex: 1; padding: 12px; border-radius: 12px; border: none; outline: none; 
-            background: var(--input-bg); font-size: 16px; color: var(--text-primary);
-            resize: none; max-height: 120px; min-height: 24px; overflow-y: auto; font-family: inherit;
-        }
+        /* Input Area */
+        .input-area { min-height: 62px; background: var(--wa-header-bg); padding: 8px 16px; display: flex; align-items: flex-end; gap: 10px; z-index: 100; flex-shrink: 0; padding-bottom: max(8px, env(safe-area-inset-bottom)); position: relative; }
+        .input-box { flex: 1; padding: 12px; border-radius: 12px; border: none; outline: none; background: var(--input-bg); font-size: 16px; color: var(--text-primary); resize: none; max-height: 120px; min-height: 24px; overflow-y: auto; font-family: inherit; }
         .btn-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 24px; padding: 5px; margin-bottom: 2px; }
+        .btn-icon.recording { color: #d64646; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-        /* Modals & Alerts */
+        /* Emoji Picker (Simple Grid) */
+        #emojiPicker { display: none; position: absolute; bottom: 70px; left: 10px; background: var(--app-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); width: 250px; flex-wrap: wrap; gap: 5px; height: 150px; overflow-y: auto; z-index: 200; }
+        .emoji-item { font-size: 20px; cursor: pointer; padding: 5px; border-radius: 5px; }
+        .emoji-item:hover { background: var(--border-color); }
+
+        /* Modals */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--body-bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-primary); }
         .modal-box { background: var(--app-bg); padding: 25px; border-radius: 10px; text-align: center; width: 85%; max-width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto; }
         .modal-box h3 { margin-bottom: 15px; font-size: 18px; }
         .modal-box p { font-size: 14px; margin-bottom: 15px; line-height: 1.4; color: var(--text-secondary); }
         .modal-box input, .modal-box select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border-color); border-radius: 5px; background: var(--input-bg); color: var(--text-primary); font-size: 16px; }
         .modal-box button { background: var(--wa-green); color: white; border: none; padding: 12px; width: 100%; cursor: pointer; border-radius: 5px; font-weight: bold; margin-top: 10px; font-size: 14px; }
+        .modal-box button:disabled { background: #ccc; cursor: not-allowed; }
         .modal-box .btn-cancel { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); margin-top: 8px; }
         .modal-box .btn-danger { background: #d64646; color: white; margin-top: 15px; }
-
         .auth-toggle { margin-top: 15px; font-size: 13px; color: var(--wa-green); cursor: pointer; text-decoration: underline; }
-        
-        /* Member List Style */
         .member-list { text-align: left; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px; }
         .member-item { padding: 5px 0; font-size: 14px; display: flex; align-items: center; gap: 10px; }
-        .member-item i { color: var(--wa-green); }
-
-        /* Image Zoom */
+        
         .image-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.95); flex-direction: column; justify-content: center; align-items: center; }
         .modal-content { margin: auto; display: block; max-width: 90%; max-height: 90vh; border-radius: 5px; animation: zoom 0.3s; }
         .close-modal { position: absolute; top: 15px; right: 35px; color: #f1f1f1; font-size: 40px; font-weight: bold; transition: 0.3s; cursor: pointer; }
@@ -194,7 +178,7 @@
             <h3>Masuk Chat</h3>
             <input type="text" id="loginUsername" placeholder="Username">
             <input type="password" id="loginPassword" placeholder="Password">
-            <button onclick="authLogin()">MASUK</button>
+            <button onclick="authLogin()" id="btnLogin">MASUK</button>
             <div class="auth-toggle" onclick="showRegister()">Belum punya akun? Daftar disini</div>
         </div>
 
@@ -204,7 +188,7 @@
             <input type="text" id="regName" placeholder="Nama Lengkap (Di Chat)">
             <input type="text" id="regUsername" placeholder="Username (Untuk Login)">
             <input type="password" id="regPassword" placeholder="Password">
-            <button onclick="authRegister()">DAFTAR & MASUK</button>
+            <button onclick="authRegister()" id="btnRegister">DAFTAR & MASUK</button>
             <div class="auth-toggle" onclick="showLogin()">Sudah punya akun? Login disini</div>
         </div>
     </div>
@@ -212,29 +196,22 @@
     <div id="settingsOverlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.8);">
         <div class="modal-box">
             <h3><i class="fas fa-cog"></i> Pengaturan</h3>
-            
             <button onclick="requestEditName()" style="background: var(--border-color); color: var(--text-primary);">
                 <i class="fas fa-pen"></i> Ganti Nama Tampilan
             </button>
-            
             <button onclick="changeProfilePic()" style="background: var(--border-color); color: var(--text-primary); margin-top:5px;">
                 <i class="fas fa-user-circle"></i> Ganti Foto Profil
             </button>
-
             <label style="display:block; text-align:left; font-size:14px; margin-top:15px;">Hapus pesan lebih dari:</label>
             <select id="autoDeleteDays">
                 <option value="1">1 Hari (Cepat)</option>
                 <option value="3">3 Hari</option>
                 <option value="7" selected>1 Minggu (Standar)</option>
                 <option value="30">1 Bulan</option>
-                <option value="9999">Jangan Hapus (Manual)</option>
             </select>
-            
             <button onclick="saveSettings()">Simpan & Bersihkan DB</button>
-            
             <button class="btn-danger" onclick="clearCache()"><i class="fas fa-trash-alt"></i> Reset / Fix Eror</button>
             <button class="btn-danger" onclick="logoutUser()" style="margin-top:5px;"><i class="fas fa-sign-out-alt"></i> Logout</button>
-            
             <button class="btn-cancel" onclick="document.getElementById('settingsOverlay').style.display='none'">Tutup</button>
         </div>
     </div>
@@ -282,7 +259,9 @@
             </div>
             <div class="chat-list">
                 <div class="chat-item active">
-                    <div class="avatar"><img id="sidebarGroupIcon" src="" alt="G"></div>
+                    <div class="avatar">
+                        <img id="sidebarGroupIcon" src="" alt="G">
+                        <span class="online-dot"></span> </div>
                     <div><span id="sidebarGroupName" style="font-weight: 500;">...</span></div>
                 </div>
             </div>
@@ -290,7 +269,7 @@
 
         <div class="chat-area">
             <div class="chat-header" onclick="openGroupInfo()">
-                <div class="avatar"><img id="headerGroupIcon" src="" alt="G"></div>
+                <div class="avatar"><img id="headerGroupIcon" src="" alt="G"><span class="online-dot"></span></div>
                 <div style="flex: 1; margin-left: 10px;">
                     <div id="headerGroupName" style="font-weight: bold;">Loading...</div>
                     <div style="font-size: 11px; color: var(--text-secondary);">Ketuk untuk info grup</div>
@@ -308,14 +287,18 @@
                 <i class="fas fa-times" style="cursor:pointer; font-size:16px;" onclick="cancelReply()"></i>
             </div>
 
+            <div id="emojiPicker"></div>
+
             <div class="input-area">
-                <button class="btn-icon" onclick="document.getElementById('imageInput').click()">
-                    <i class="fas fa-camera"></i>
-                </button>
+                <button class="btn-icon" onclick="toggleEmoji()"><i class="far fa-smile"></i></button>
+                
+                <button class="btn-icon" onclick="document.getElementById('imageInput').click()"><i class="fas fa-camera"></i></button>
+                
                 <textarea class="input-box" id="msgInput" rows="1" placeholder="Ketik pesan..."></textarea>
-                <button class="btn-icon" onclick="sendMessage()">
-                    <i class="fas fa-paper-plane" style="color: var(--wa-green);"></i>
-                </button>
+                
+                <button class="btn-icon" id="btnMic" onclick="toggleRecord()"><i class="fas fa-microphone"></i></button>
+                
+                <button class="btn-icon" onclick="sendMessage()"><i class="fas fa-paper-plane" style="color: var(--wa-green);"></i></button>
             </div>
         </div>
     </div>
@@ -326,51 +309,39 @@
     <script>
         // CONFIG FIREBASE
         const p1 = "AIza"; const p2 = "SyBH9Udej6I9JankuJS9J57KPzn8DNUlNYA";
-        const firebaseConfig = {
-            apiKey: p1 + p2, 
-            authDomain: "chatto-82194.firebaseapp.com",
-            projectId: "chatto-82194",
-            storageBucket: "chatto-82194.firebasestorage.app",
-            messagingSenderId: "169590873334",
-            appId: "1:169590873334:web:3a8d4581b10aa88096a0d7"
-        };
-
+        const firebaseConfig = { apiKey: p1 + p2, authDomain: "chatto-82194.firebaseapp.com", projectId: "chatto-82194", storageBucket: "chatto-82194.firebasestorage.app", messagingSenderId: "169590873334", appId: "1:169590873334:web:3a8d4581b10aa88096a0d7" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); } else { firebase.app(); }
         const db = firebase.firestore();
 
         // Vars
         let currentUser = localStorage.getItem("chatUser") || "";
         let currentUsername = localStorage.getItem("chatUsername") || "";
-        // Avatar default kalau belum diset
         let defaultUserAvatar = "https://ui-avatars.com/api/?background=random&color=fff&name=";
         let currentAvatar = localStorage.getItem("chatAvatar") || "";
-        
         let activeMembers = new Set();
         let currentReply = null;
+        let mediaRecorder; let audioChunks = []; let isRecording = false;
         
         // Defaults Group
         const defaultIcon = "https://ui-avatars.com/api/?name=Grup&background=0D8ABC&color=fff";
         let currentGroupName = "Grup Warga GitHub";
         let currentGroupIcon = defaultIcon;
 
+        // Emojis
+        const emojis = ["😀","😂","😍","😭","👍","🙏","🔥","❤️","😎","🤔","🙄","😡","🎉","👀","💩","👻","👋","💋","🤣","😅"];
+
         // --- MAIN ---
         document.addEventListener("DOMContentLoaded", function() {
-            if (localStorage.getItem('theme') === 'dark') {
-                document.body.classList.add('dark-mode');
-                const toggle = document.querySelector('.theme-toggle');
-                if(toggle) toggle.classList.replace('fa-moon', 'fa-sun');
-            }
-
+            if (localStorage.getItem('theme') === 'dark') { document.body.classList.add('dark-mode'); document.querySelector('.theme-toggle').classList.replace('fa-moon', 'fa-sun'); }
+            
             initGlobalGroupInfo();
+            initEmoji();
 
             if(currentUser && currentUsername) {
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('myDisplayName').innerText = currentUser;
-                
-                // Set Avatar Sendiri di Sidebar
                 const myAv = document.getElementById("myAvatarDisplay");
                 if(myAv) myAv.src = currentAvatar || (defaultUserAvatar + currentUser);
-
                 loadMessages();
             } else {
                 document.getElementById('loginOverlay').style.display = 'flex';
@@ -379,180 +350,110 @@
 
             const inputMsg = document.getElementById("msgInput");
             if(inputMsg) {
-                inputMsg.addEventListener('input', function() {
-                    this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';
-                    if(this.value === '') this.style.height = 'auto';
-                });
-                inputMsg.addEventListener("keypress", (e) => { 
-                    if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault(); sendMessage(); inputMsg.style.height = 'auto';
-                    }
-                });
+                inputMsg.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; if(this.value === '') this.style.height = 'auto'; });
+                inputMsg.addEventListener("keypress", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); inputMsg.style.height = 'auto'; } });
                 inputMsg.addEventListener("focus", () => { setTimeout(() => scrollToBottom(), 300); });
             }
         });
 
-        function scrollToBottom() {
-            const chatList = document.getElementById("messagesList");
-            if(chatList) chatList.scrollTop = chatList.scrollHeight;
-        }
+        function scrollToBottom() { const chatList = document.getElementById("messagesList"); if(chatList) chatList.scrollTop = chatList.scrollHeight; }
 
-        // --- CUSTOM ALERTS & PROMPTS ---
-        function showCustomAlert(msg) {
-            document.getElementById('alertMessage').innerText = msg;
-            document.getElementById('customAlertOverlay').style.display = 'flex';
-        }
-        let promptCallback = null;
-        function showCustomPrompt(title, placeholder, callback, existingValue = "") {
-            document.getElementById('promptTitle').innerText = title;
-            const input = document.getElementById('promptInput');
-            input.placeholder = placeholder; input.value = existingValue;
-            promptCallback = callback;
-            document.getElementById('customPromptOverlay').style.display = 'flex'; input.focus();
-        }
-        function closeCustomPrompt() { document.getElementById('customPromptOverlay').style.display = 'none'; promptCallback = null; }
-        document.getElementById('promptConfirmBtn').addEventListener('click', () => {
-            const val = document.getElementById('promptInput').value;
-            if (promptCallback) promptCallback(val); closeCustomPrompt();
-        });
-
-        // --- USER PROFILE & LOGIN ---
-        function authLogin() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            if(!username || !password) { showCustomAlert("Isi username dan password!"); return; }
-
-            db.collection("users").where("username", "==", username).where("password", "==", password).get().then((qs) => {
-                if(qs.empty) { showCustomAlert("Username atau Password salah!"); } else {
-                    let d = qs.docs[0].data(); performLogin(d.name, d.username);
-                }
-            }).catch(err => showCustomAlert("Error Login: " + err.message));
-        }
+        // --- AUTH LOGIC (FIXED) ---
+        function showRegister() { document.getElementById('loginForm').style.display = 'none'; document.getElementById('registerForm').style.display = 'block'; }
+        function showLogin() { document.getElementById('registerForm').style.display = 'none'; document.getElementById('loginForm').style.display = 'block'; }
 
         function authRegister() {
+            const btn = document.getElementById("btnRegister");
             const name = document.getElementById('regName').value.trim();
             const username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value.trim();
-            if(!name || !username || !password) { showCustomAlert("Lengkapi data!"); return; }
-            if(isNameTaken(name)) { showCustomAlert("Nama sudah dipakai di grup."); return; }
+
+            if(!name || !username || !password) { showCustomAlert("Semua kolom wajib diisi!"); return; }
+            if(isNameTaken(name)) { showCustomAlert("Nama Tampilan '" + name + "' sudah dipakai."); return; }
+
+            btn.disabled = true; btn.innerText = "Sedang Mendaftar...";
 
             db.collection("users").where("username", "==", username).get().then((qs) => {
-                if(!qs.empty) { showCustomAlert("Username sudah ada."); } else {
-                    db.collection("users").add({ name: name, username: username, password: password })
-                    .then(() => performLogin(name, username)).catch(err => showCustomAlert(err.message));
+                if(!qs.empty) { showCustomAlert("Username sudah terdaftar."); btn.disabled = false; btn.innerText = "DAFTAR & MASUK"; } 
+                else {
+                    db.collection("users").add({ name: name, username: username, password: password, joinedAt: firebase.firestore.FieldValue.serverTimestamp() })
+                    .then(() => performLogin(name, username))
+                    .catch(err => { showCustomAlert(err.message); btn.disabled = false; btn.innerText = "DAFTAR & MASUK"; });
                 }
-            });
+            }).catch(err => { showCustomAlert("Koneksi Error: " + err.message); btn.disabled = false; btn.innerText = "DAFTAR & MASUK"; });
+        }
+
+        function authLogin() {
+            const btn = document.getElementById("btnLogin");
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            if(!username || !password) { showCustomAlert("Isi data!"); return; }
+
+            btn.disabled = true; btn.innerText = "Loading...";
+
+            db.collection("users").where("username", "==", username).where("password", "==", password).get().then((qs) => {
+                if(qs.empty) { showCustomAlert("Username/Password salah!"); btn.disabled = false; btn.innerText = "MASUK"; } 
+                else {
+                    let d = qs.docs[0].data(); performLogin(d.name, d.username);
+                }
+            }).catch(err => { showCustomAlert("Error Login: " + err.message); btn.disabled = false; btn.innerText = "MASUK"; });
         }
 
         function performLogin(name, username) {
             currentUser = name; currentUsername = username;
             localStorage.setItem("chatUser", currentUser); localStorage.setItem("chatUsername", currentUsername);
             document.getElementById('myDisplayName').innerText = currentUser;
-            
-            // Default avatar saat login baru
-            if(!currentAvatar) {
-                currentAvatar = defaultUserAvatar + name;
-                localStorage.setItem("chatAvatar", currentAvatar);
-            }
+            if(!currentAvatar) { currentAvatar = defaultUserAvatar + name; localStorage.setItem("chatAvatar", currentAvatar); }
             document.getElementById("myAvatarDisplay").src = currentAvatar;
-
             document.getElementById('loginOverlay').style.display = 'none';
             loadMessages();
         }
 
-        function requestEditName() {
-            showCustomPrompt("Ganti Nama", "Nama baru...", (n) => {
-                if (n && n.trim() !== "") {
-                    if (isNameTaken(n.trim())) { showCustomAlert("Nama sudah dipakai."); } 
-                    else {
-                        currentUser = n.trim(); localStorage.setItem("chatUser", currentUser);
-                        document.getElementById('myDisplayName').innerText = currentUser;
-                        showCustomAlert("Nama diganti.");
-                    }
-                }
-            }, currentUser);
-        }
-
-        // --- FITUR GANTI FOTO PROFIL ---
-        function changeProfilePic() {
-            showCustomPrompt("URL Foto Profil", "Tempel link gambar...", (url) => {
-                if(url && url.trim() !== "") {
-                    currentAvatar = url.trim();
-                    localStorage.setItem("chatAvatar", currentAvatar);
-                    document.getElementById("myAvatarDisplay").src = currentAvatar;
-                    showCustomAlert("Foto profil diperbarui! Akan muncul di chat selanjutnya.");
-                }
-            }, currentAvatar);
-        }
-
-        function isNameTaken(name) {
-            const c = name.toLowerCase(); for (let m of activeMembers) { if (m.toLowerCase() === c) return true; } return false;
-        }
-
-        function logoutUser() { if(confirm("Keluar akun?")) { localStorage.clear(); window.location.reload(); } }
-        function clearCache() { if(confirm("Reset aplikasi?")) { localStorage.clear(); window.location.reload(); } }
-
-        // --- GROUP INFO (FIX LOGIC) ---
-        function initGlobalGroupInfo() {
-            db.collection("config").doc("groupInfo").onSnapshot((doc) => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    currentGroupName = data.name || "Grup Warga GitHub";
-                    currentGroupIcon = data.icon || defaultIcon;
-                    updateGroupUI();
-                }
+        // --- FEATURES (VOICE, EMOJI, READ) ---
+        function initEmoji() {
+            const p = document.getElementById("emojiPicker");
+            emojis.forEach(e => {
+                let s = document.createElement("span"); s.className = "emoji-item"; s.innerText = e;
+                s.onclick = () => { document.getElementById("msgInput").value += e; };
+                p.appendChild(s);
             });
         }
+        function toggleEmoji() { const p = document.getElementById("emojiPicker"); p.style.display = p.style.display === "flex" ? "none" : "flex"; }
 
-        function editGroupInfoGlobal() {
-            // Prompt Berantai yang Benar
-            showCustomPrompt("Nama Grup Baru", "Masukkan nama...", (newName) => {
-                // Setelah nama di-ok, tanya Icon
-                if(newName) {
-                    // Delay dikit biar transisi modal enak
-                    setTimeout(() => {
-                        showCustomPrompt("URL Foto Grup (Opsional)", "Link gambar...", (newIcon) => {
-                            let data = { name: newName };
-                            if(newIcon && newIcon.trim() !== "") data.icon = newIcon;
-                            
-                            db.collection("config").doc("groupInfo").set(data, { merge: true })
-                                .then(() => {
-                                    document.getElementById('groupInfoOverlay').style.display='none';
-                                    showCustomAlert("Info Grup Diperbarui!");
-                                });
-                        }, currentGroupIcon);
-                    }, 200);
-                }
-            }, currentGroupName);
+        function toggleRecord() {
+            if(isRecording) stopRecord(); else startRecord();
+        }
+        async function startRecord() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                mediaRecorder.onstop = sendAudio;
+                mediaRecorder.start();
+                isRecording = true;
+                document.getElementById("btnMic").classList.add("recording");
+            } catch(e) { showCustomAlert("Izin Mikrofon ditolak!"); }
+        }
+        function stopRecord() {
+            if(mediaRecorder) mediaRecorder.stop();
+            isRecording = false;
+            document.getElementById("btnMic").classList.remove("recording");
+        }
+        function sendAudio() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = function() {
+                const base64Audio = reader.result;
+                // Validasi size (Max 500KB for base64 audio safety in Firestore)
+                if(base64Audio.length > 800000) { showCustomAlert("Suara terlalu panjang! Maks 30 detik."); return; }
+                const payload = { text: base64Audio, type: "audio", user: currentUser, avatar: currentAvatar, timestamp: firebase.firestore.FieldValue.serverTimestamp(), readBy: [currentUser] };
+                db.collection("chats").add(payload);
+            }
         }
 
-        function updateGroupUI() {
-            const t = [document.getElementById("headerGroupName"), document.getElementById("sidebarGroupName"), document.getElementById("modalGroupName")];
-            t.forEach(el => { if(el) el.innerText = currentGroupName; });
-            const i = [document.getElementById("headerGroupIcon"), document.getElementById("sidebarGroupIcon"), document.getElementById("modalGroupIcon")];
-            i.forEach(el => { if(el) el.src = currentGroupIcon; });
-        }
-
-        // --- SETTINGS ---
-        function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
-        function saveSettings() {
-            const days = parseInt(document.getElementById('autoDeleteDays').value);
-            if (days < 9999) { runAutoCleaner(days); } 
-            else { showCustomAlert("Disimpan (Manual)."); document.getElementById('settingsOverlay').style.display = 'none'; }
-        }
-        function runAutoCleaner(days) {
-            const btn = document.querySelector('#settingsOverlay button');
-            btn.innerText = "Cleaning..."; btn.disabled = true;
-            const d = new Date(); d.setDate(d.getDate() - days);
-            db.collection("chats").where("timestamp", "<", d).get().then(qs => {
-                const batch = db.batch(); qs.forEach(doc => batch.delete(doc.ref));
-                return batch.commit().then(() => qs.size);
-            }).then(c => {
-                showCustomAlert(`${c} pesan dihapus.`); document.getElementById('settingsOverlay').style.display = 'none'; btn.innerText = "Simpan"; btn.disabled = false;
-            });
-        }
-
-        // --- CHAT LOGIC ---
+        // --- CHAT CORE & READ RECEIPTS ---
         function loadMessages(bg = false) {
             db.collection("chats").orderBy("timestamp", "asc").onSnapshot(snap => {
                 const list = document.getElementById("messagesList");
@@ -562,6 +463,16 @@
                 snap.forEach(doc => {
                     const d = doc.data();
                     if(d.user) activeMembers.add(d.user);
+                    
+                    // Mark as Read Logic (Update DB if I haven't read it)
+                    if(!bg && d.user !== currentUser) {
+                        let readers = d.readBy || [];
+                        if(!readers.includes(currentUser)) {
+                            readers.push(currentUser);
+                            db.collection("chats").doc(doc.id).update({ readBy: readers });
+                        }
+                    }
+
                     if(!bg) renderMessage(d, list);
                 });
                 if(!bg) setTimeout(() => scrollToBottom(), 100);
@@ -573,56 +484,58 @@
             const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
             const color = isMe ? 'var(--wa-green)' : '#d64646';
             
-            // Handle Profile Pic User Lain
-            let avatarImg = "";
-            if (!isMe) {
-                // Gunakan avatar dari pesan jika ada, kalau tidak generate dari nama
-                let picUrl = data.avatar || (defaultUserAvatar + data.user);
-                avatarImg = `<div class="chat-avatar"><img src="${picUrl}"></div>`;
+            // Read Status (Blue Tick)
+            let readers = data.readBy || [];
+            // Kalau ada orang lain selain pengirim yg baca -> Blue Tick
+            let isRead = readers.length > 1; 
+            let tickClass = isRead ? "tick-icon read" : "tick-icon";
+            let tickHtml = isMe ? `<i class="fas fa-check-double ${tickClass}"></i>` : '';
+
+            let content = "";
+            if(data.type === "audio") {
+                content = `<audio controls src="${data.text}"></audio>`;
+            } else if (data.text.startsWith("data:image")) {
+                content = `<img src="${data.text}" onclick="openModal(this.src)">`;
+            } else {
+                content = `<span style="white-space: pre-wrap;">${data.text}</span>`;
             }
 
-            let content = `<span style="white-space: pre-wrap;">${data.text}</span>`;
-            if (data.text.startsWith("data:image")) content = `<img src="${data.text}" onclick="openModal(this.src)">`;
+            let avatarImg = !isMe ? `<div class="chat-avatar"><img src="${data.avatar || defaultUserAvatar + data.user}"></div>` : "";
+            let replyHtml = data.reply ? `<div class="reply-quote"><strong>${data.reply.user}</strong><span>${data.reply.text}</span></div>` : "";
 
-            let replyHtml = "";
-            if (data.reply) {
-                replyHtml = `<div class="reply-quote"><strong>${data.reply.user}</strong><span>${data.reply.text}</span></div>`;
-            }
-
-            // Wrapper Row untuk Layout Avatar + Bubble
             const row = document.createElement('div');
             row.className = `message-row ${isMe ? 'sent' : 'received'}`;
-            
             row.innerHTML = `
                 ${avatarImg}
                 <div class="message ${isMe ? 'sent' : 'received'}">
                     ${replyHtml}
                     <div style="font-weight:bold; color: ${color}; font-size:12.5px; margin-bottom:2px;">${data.user}</div>
                     ${content}
-                    <div class="meta-info">
-                        ${time}
-                        ${isMe ? '<i class="fas fa-check-double" style="color:#53bdeb;"></i>' : ''}
-                        <i class="fas fa-reply reply-btn" onclick="setReply('${data.user}', 'Pesan...')"></i>
+                    <div class="meta-info">${time} ${tickHtml}
+                        <i class="fas fa-reply reply-btn" onclick="setReply('${data.user}', 'Balasan...')"></i>
                     </div>
-                </div>
-            `;
+                </div>`;
             
-            // Fix Reply Text Logic inside onclick
-            const replyBtn = row.querySelector('.reply-btn');
-            let rawText = data.text || "";
-            replyBtn.onclick = () => setReply(data.user, rawText);
-
+            row.querySelector('.reply-btn').onclick = () => setReply(data.user, data.type === "audio" ? "🎵 Pesan Suara" : (data.text.startsWith("data:image") ? "📷 Foto" : data.text));
             container.appendChild(row);
         }
+
+        // --- UTILS & SETTINGS ---
+        function setReply(user, text) {
+            currentReply = { user: user, text: text.substring(0, 50) };
+            document.getElementById("replyUser").innerText = user;
+            document.getElementById("replyText").innerText = text.substring(0, 50);
+            document.getElementById("replyPreview").style.display = "flex";
+        }
+        function cancelReply() { currentReply = null; document.getElementById("replyPreview").style.display = "none"; }
 
         function sendMessage() {
             const input = document.getElementById("msgInput");
             const text = input.value;
             if (text && text.trim() !== "") {
                 const payload = {
-                    text: text, user: currentUser,
-                    avatar: currentAvatar, // Kirim avatar URL saat ini
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    text: text, user: currentUser, avatar: currentAvatar, type: "text",
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(), readBy: [currentUser]
                 };
                 if (currentReply) payload.reply = currentReply;
                 db.collection("chats").add(payload).then(() => {
@@ -631,48 +544,43 @@
             }
         }
 
-        function setReply(user, text) {
-            const clean = text.startsWith("data:image") ? "📷 Foto" : text;
-            currentReply = { user: user, text: clean };
-            document.getElementById("replyUser").innerText = user;
-            document.getElementById("replyText").innerText = clean.substring(0, 50);
-            document.getElementById("replyPreview").style.display = "flex";
-            document.getElementById("msgInput").focus();
-        }
-        function cancelReply() { currentReply = null; document.getElementById("replyPreview").style.display = "none"; }
+        function isNameTaken(name) { const c = name.toLowerCase(); for (let m of activeMembers) { if (m.toLowerCase() === c) return true; } return false; }
+        
+        // MODALS & HELPERS
+        function showCustomAlert(msg) { document.getElementById('alertMessage').innerText = msg; document.getElementById('customAlertOverlay').style.display = 'flex'; }
+        let promptCallback = null;
+        function showCustomPrompt(title, ph, cb, val = "") { document.getElementById('promptTitle').innerText = title; const i = document.getElementById('promptInput'); i.placeholder = ph; i.value = val; promptCallback = cb; document.getElementById('customPromptOverlay').style.display = 'flex'; i.focus(); }
+        function closeCustomPrompt() { document.getElementById('customPromptOverlay').style.display = 'none'; promptCallback = null; }
+        document.getElementById('promptConfirmBtn').addEventListener('click', () => { if (promptCallback) promptCallback(document.getElementById('promptInput').value); closeCustomPrompt(); });
 
-        // --- UTILS ---
-        function toggleTheme() {
-            document.body.classList.toggle('dark-mode');
-            const t = document.querySelector('.theme-toggle');
-            if(document.body.classList.contains('dark-mode')) { localStorage.setItem('theme', 'dark'); t.classList.replace('fa-moon', 'fa-sun'); }
-            else { localStorage.setItem('theme', 'light'); t.classList.replace('fa-sun', 'fa-moon'); }
+        function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
+        function saveSettings() {
+            const days = parseInt(document.getElementById('autoDeleteDays').value);
+            if (days < 9999) { 
+                const btn = document.querySelector('#settingsOverlay button'); btn.innerText = "Cleaning..."; btn.disabled = true;
+                const d = new Date(); d.setDate(d.getDate() - days);
+                db.collection("chats").where("timestamp", "<", d).get().then(qs => {
+                    const b = db.batch(); qs.forEach(doc => b.delete(doc.ref)); return b.commit().then(() => qs.size);
+                }).then(c => { showCustomAlert(`${c} dihapus.`); document.getElementById('settingsOverlay').style.display = 'none'; btn.innerText = "Simpan"; btn.disabled = false; });
+            } else { showCustomAlert("Manual."); document.getElementById('settingsOverlay').style.display = 'none'; }
         }
-        function openModal(src) { document.getElementById("img01").src = src; document.getElementById("imageModal").style.display = "flex"; }
-        function closeModal() { document.getElementById("imageModal").style.display = "none"; }
-        function handleImageSelect(input) {
-            if (input.files && input.files[0]) {
-                const r = new FileReader();
-                r.onload = function(e) {
-                    const i = new Image(); i.src = e.target.result;
-                    i.onload = function() {
-                        const c = document.createElement("canvas"); const x = c.getContext("2d");
-                        const m = 600; let w = i.width; let h = i.height;
-                        if (w > m) { h *= m / w; w = m; } c.width = w; c.height = h; x.drawImage(i, 0, 0, w, h);
-                        db.collection("chats").add({
-                            text: c.toDataURL("image/jpeg", 0.7), user: currentUser, avatar: currentAvatar,
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    }
-                }; r.readAsDataURL(input.files[0]);
-            }
+        function requestEditName() { showCustomPrompt("Ganti Nama", "Nama...", (n) => { if(n && !isNameTaken(n.trim())) { currentUser=n.trim(); localStorage.setItem("chatUser",n); document.getElementById('myDisplayName').innerText=n; showCustomAlert("Sukses!"); } }); }
+        function changeProfilePic() { showCustomPrompt("URL Foto", "Link...", (u) => { if(u) { currentAvatar=u; localStorage.setItem("chatAvatar",u); document.getElementById("myAvatarDisplay").src=u; showCustomAlert("Foto diganti!"); } }, currentAvatar); }
+        function logoutUser() { if(confirm("Keluar?")) { localStorage.clear(); window.location.reload(); } }
+        function clearCache() { if(confirm("Reset?")) { localStorage.clear(); window.location.reload(); } }
+        
+        function initGlobalGroupInfo() { db.collection("config").doc("groupInfo").onSnapshot(d => { if(d.exists) { const data=d.data(); currentGroupName=data.name; currentGroupIcon=data.icon; updateGroupUI(); } else { db.collection("config").doc("groupInfo").set({name:currentGroupName, icon:currentGroupIcon}); } }); }
+        function editGroupInfoGlobal() { showCustomPrompt("Nama Grup", "Nama...", (n) => { if(n) { setTimeout(() => { showCustomPrompt("Foto Grup", "Link...", (i) => { let d={name:n}; if(i) d.icon=i; db.collection("config").doc("groupInfo").set(d, {merge:true}); document.getElementById('groupInfoOverlay').style.display='none'; }, currentGroupIcon); }, 200); } }, currentGroupName); }
+        function updateGroupUI() { 
+            [document.getElementById("headerGroupName"), document.getElementById("sidebarGroupName"), document.getElementById("modalGroupName")].forEach(e => {if(e) e.innerText=currentGroupName});
+            [document.getElementById("headerGroupIcon"), document.getElementById("sidebarGroupIcon"), document.getElementById("modalGroupIcon")].forEach(e => {if(e) e.src=currentGroupIcon});
         }
-        function openGroupInfo() {
-            const l = document.getElementById("memberListContainer"); l.innerHTML = "";
-            if (activeMembers.size > 0) activeMembers.forEach(m => l.innerHTML += `<div class="member-item"><i class="fas fa-user-circle"></i> ${m}</div>`);
-            else l.innerHTML = "Loading...";
-            document.getElementById("groupInfoOverlay").style.display = 'flex';
-        }
+        function openGroupInfo() { const l = document.getElementById("memberListContainer"); l.innerHTML=""; if(activeMembers.size>0) activeMembers.forEach(m => l.innerHTML+=`<div class="member-item"><i class="fas fa-user-circle"></i> ${m}</div>`); else l.innerHTML="..."; document.getElementById("groupInfoOverlay").style.display='flex'; }
+        
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); const t=document.querySelector('.theme-toggle'); if(document.body.classList.contains('dark-mode')){localStorage.setItem('theme','dark');t.classList.replace('fa-moon','fa-sun');} else {localStorage.setItem('theme','light');t.classList.replace('fa-sun','fa-moon');} }
+        function openModal(src) { document.getElementById("img01").src=src; document.getElementById("imageModal").style.display="flex"; }
+        function closeModal() { document.getElementById("imageModal").style.display="none"; }
+        function handleImageSelect(i) { if(i.files[0]) { const r=new FileReader(); r.onload=e=>{ const im=new Image(); im.src=e.target.result; im.onload=()=>{ const c=document.createElement("canvas"); const x=c.getContext("2d"); const m=600; let w=im.width; let h=im.height; if(w>m){h*=m/w;w=m;} c.width=w; c.height=h; x.drawImage(im,0,0,w,h); db.collection("chats").add({text:c.toDataURL("image/jpeg",0.7), type:"image", user:currentUser, avatar:currentAvatar, timestamp:firebase.firestore.FieldValue.serverTimestamp(), readBy:[currentUser]}); } }; r.readAsDataURL(i.files[0]); } }
     </script>
 </body>
 </html>
