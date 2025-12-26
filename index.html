@@ -58,7 +58,7 @@
         .chat-item:hover { background: var(--border-color); }
         .chat-item.active { background: var(--wa-header-bg); }
         .avatar { width: 45px; height: 45px; background: #dfe5e7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; color: gray; flex-shrink: 0; overflow: hidden; }
-        .avatar img { width: 100%; height: 100%; object-fit: cover; } /* Fix Image Avatar */
+        .avatar img { width: 100%; height: 100%; object-fit: cover; } 
 
         /* Chat Area */
         .chat-area { flex: 1; display: flex; flex-direction: column; background-color: var(--wa-chat-bg); position: relative; z-index: 1; }
@@ -71,7 +71,7 @@
         .chat-header { 
             background: var(--wa-header-bg); height: 60px; padding: 10px 16px; 
             display: flex; align-items: center; border-left: 1px solid var(--border-color); 
-            z-index: 10; color: var(--text-primary); cursor: pointer; /* Bisa diklik */
+            z-index: 10; color: var(--text-primary); cursor: pointer;
         }
         
         .messages-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; }
@@ -144,7 +144,7 @@
             .message { max-width: 85%; }
             body.dark-mode { background-color: #111b21; }
             .reply-btn { opacity: 1; }
-            .chat-header { padding: 5px 10px; } /* Header lebih ringkas di HP */
+            .chat-header { padding: 5px 10px; } 
         }
     </style>
 </head>
@@ -178,7 +178,6 @@
     <div id="groupInfoOverlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.8);">
         <div class="modal-box">
             <h3><i class="fas fa-users"></i> Info Grup</h3>
-            
             <div style="margin: 20px 0;">
                 <div class="avatar" style="width: 80px; height: 80px; margin: 0 auto 10px auto;">
                     <img id="modalGroupIcon" src="" alt="Icon">
@@ -188,13 +187,10 @@
                     <i class="fas fa-pen"></i> Ubah Nama & Foto
                 </button>
             </div>
-
             <div class="member-list">
-                <div style="font-weight:bold; margin-bottom:10px;">Anggota Aktif (Dari Chat):</div>
-                <div id="memberListContainer">
-                    </div>
+                <div style="font-weight:bold; margin-bottom:10px;">Anggota Aktif:</div>
+                <div id="memberListContainer"></div>
             </div>
-
             <button class="btn-cancel" onclick="document.getElementById('groupInfoOverlay').style.display='none'">Tutup</button>
         </div>
     </div>
@@ -265,7 +261,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
-        // CONFIG FIREBASE (PUNYA AGAN)
+        // --- CONFIG FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyBH9Udej6I9JankuJS9J57KPzn8DNUlNYA",
             authDomain: "chatto-82194.firebaseapp.com",
@@ -275,61 +271,75 @@
             appId: "1:169590873334:web:3a8d4581b10aa88096a0d7"
         };
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        // Inisialisasi Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        } else {
+            firebase.app(); 
+        }
         const db = firebase.firestore();
+
+        // Variable Global
         let currentUser = localStorage.getItem("chatUser") || "";
-        let activeMembers = new Set(); // Untuk menyimpan list anggota unik
+        let activeMembers = new Set();
+        let currentReply = null;
         
-        // --- GROUP INFO INIT ---
+        // Group Info Default
         const defaultIcon = "https://ui-avatars.com/api/?name=Grup&background=0D8ABC&color=fff";
         let currentGroupName = localStorage.getItem("groupName") || "Grup Warga GitHub";
         let currentGroupIcon = localStorage.getItem("groupIcon") || defaultIcon;
-        
-        updateGroupUI();
 
-        function updateGroupUI() {
-            document.getElementById("headerGroupName").innerText = currentGroupName;
-            document.getElementById("sidebarGroupName").innerText = currentGroupName;
-            document.getElementById("modalGroupName").innerText = currentGroupName;
+        // --- MAIN INITIALIZATION (Menunggu Halaman Siap) ---
+        document.addEventListener("DOMContentLoaded", function() {
             
-            document.getElementById("headerGroupIcon").src = currentGroupIcon;
-            document.getElementById("sidebarGroupIcon").src = currentGroupIcon;
-            document.getElementById("modalGroupIcon").src = currentGroupIcon;
-        }
+            // 1. Terapkan Tema
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+                const toggle = document.querySelector('.theme-toggle');
+                if(toggle) toggle.classList.replace('fa-moon', 'fa-sun');
+            }
 
-        // --- DARK MODE LOGIC ---
-        if (localStorage.getItem('theme') === 'dark') {
-            document.body.classList.add('dark-mode');
-            document.querySelector('.theme-toggle').classList.replace('fa-moon', 'fa-sun');
-        }
-        function toggleTheme() {
-            document.body.classList.toggle('dark-mode');
-            const themeIcon = document.querySelector('.theme-toggle');
-            if (document.body.classList.contains('dark-mode')) {
-                localStorage.setItem('theme', 'dark');
-                themeIcon.classList.replace('fa-moon', 'fa-sun');
-            } else {
-                localStorage.setItem('theme', 'light');
-                themeIcon.classList.replace('fa-sun', 'fa-moon');
+            // 2. Terapkan Info Grup
+            updateGroupUI();
+
+            // 3. Cek Status Login
+            if(currentUser) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('myDisplayName').innerText = currentUser;
+                loadMessages();
+            }
+
+            // 4. Bind Enter Key untuk Chat
+            const inputMsg = document.getElementById("msgInput");
+            if(inputMsg) {
+                inputMsg.addEventListener("keypress", (e) => { 
+                    if (e.key === "Enter") sendMessage(); 
+                });
+            }
+        });
+
+        // --- FUNGSI LOGIN ---
+        function loginUser() {
+            const input = document.getElementById('usernameInput');
+            if(!input) return;
+
+            const name = input.value;
+            if(name && name.trim().length > 0) {
+                try {
+                    currentUser = name.trim();
+                    localStorage.setItem("chatUser", currentUser);
+                    document.getElementById('myDisplayName').innerText = currentUser;
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    loadMessages();
+                } catch (err) {
+                    alert("Error saat login: " + err.message);
+                    console.error(err);
+                }
+            } else { 
+                alert("Isi nama dulu bos!"); 
             }
         }
 
-        // --- LOGIN & EDIT NAME ---
-        if(currentUser) {
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('myDisplayName').innerText = currentUser;
-            loadMessages();
-        }
-        function loginUser() {
-            const name = document.getElementById('usernameInput').value;
-            if(name.trim()) {
-                currentUser = name.trim();
-                localStorage.setItem("chatUser", currentUser);
-                document.getElementById('myDisplayName').innerText = currentUser;
-                document.getElementById('loginOverlay').style.display = 'none';
-                loadMessages();
-            } else { alert("Isi nama dulu bos!"); }
-        }
         function editName() {
             const newName = prompt("Masukkan nama baru kamu:", currentUser);
             if (newName && newName.trim() !== "") {
@@ -340,24 +350,28 @@
             }
         }
 
-        // --- GROUP INFO FUNCTIONS (NEW) ---
+        // --- FUNGSI GRUP ---
+        function updateGroupUI() {
+            // Update Text
+            const textEls = [document.getElementById("headerGroupName"), document.getElementById("sidebarGroupName"), document.getElementById("modalGroupName")];
+            textEls.forEach(el => { if(el) el.innerText = currentGroupName; });
+            
+            // Update Icons
+            const imgEls = [document.getElementById("headerGroupIcon"), document.getElementById("sidebarGroupIcon"), document.getElementById("modalGroupIcon")];
+            imgEls.forEach(el => { if(el) el.src = currentGroupIcon; });
+        }
+
         function openGroupInfo() {
             const listContainer = document.getElementById("memberListContainer");
             listContainer.innerHTML = "";
             
-            // Render list anggota dari Set activeMembers
             if (activeMembers.size > 0) {
                 activeMembers.forEach(member => {
-                    listContainer.innerHTML += `
-                        <div class="member-item">
-                            <i class="fas fa-user-circle"></i> ${member}
-                        </div>
-                    `;
+                    listContainer.innerHTML += `<div class="member-item"><i class="fas fa-user-circle"></i> ${member}</div>`;
                 });
             } else {
                 listContainer.innerHTML = "<div style='font-size:12px; color:gray;'>Belum ada chat termuat.</div>";
             }
-            
             document.getElementById("groupInfoOverlay").style.display = 'flex';
         }
 
@@ -365,12 +379,8 @@
             const newName = prompt("Nama Grup Baru:", currentGroupName);
             if (newName) {
                 const newIcon = prompt("Link URL Foto Grup Baru (Kosongkan jika tidak ingin ubah):", currentGroupIcon);
-                
                 currentGroupName = newName;
-                if (newIcon && newIcon.trim() !== "") {
-                    currentGroupIcon = newIcon;
-                }
-                
+                if (newIcon && newIcon.trim() !== "") { currentGroupIcon = newIcon; }
                 localStorage.setItem("groupName", currentGroupName);
                 localStorage.setItem("groupIcon", currentGroupIcon);
                 updateGroupUI();
@@ -379,18 +389,27 @@
 
         // --- SETTINGS ---
         function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
+        
         function saveSettings() {
             const days = parseInt(document.getElementById('autoDeleteDays').value);
             if (days < 9999) { runAutoCleaner(days); } 
-            else { alert("Penyimpanan Manual Dipilih."); document.getElementById('settingsOverlay').style.display = 'none'; }
+            else { 
+                alert("Penyimpanan Manual Dipilih."); 
+                document.getElementById('settingsOverlay').style.display = 'none'; 
+            }
         }
+
         function runAutoCleaner(days) {
             const btn = document.querySelector('#settingsOverlay button');
             btn.innerText = "Sedang Membersihkan..."; btn.disabled = true;
-            const cutoffDate = new Date(); cutoffDate.setDate(cutoffDate.getDate() - days);
+            
+            const cutoffDate = new Date(); 
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+            
             db.collection("chats").where("timestamp", "<", cutoffDate).get()
                 .then((querySnapshot) => {
-                    const batch = db.batch(); querySnapshot.forEach((doc) => batch.delete(doc.ref));
+                    const batch = db.batch(); 
+                    querySnapshot.forEach((doc) => batch.delete(doc.ref));
                     return batch.commit().then(() => querySnapshot.size);
                 })
                 .then((count) => {
@@ -398,11 +417,14 @@
                     document.getElementById('settingsOverlay').style.display = 'none';
                     btn.innerText = "Simpan & Bersihkan"; btn.disabled = false;
                 })
-                .catch((error) => { console.error(error); btn.disabled = false; });
+                .catch((error) => { 
+                    console.error(error); 
+                    alert("Gagal: " + error.message);
+                    btn.disabled = false; 
+                });
         }
 
-        // --- REPLY & CHAT ---
-        let currentReply = null;
+        // --- CHAT & REPLY ---
         function setReply(user, text) {
             const cleanText = text.startsWith("data:image") ? "📷 Foto" : text;
             currentReply = { user: user, text: cleanText };
@@ -411,6 +433,7 @@
             document.getElementById("replyPreview").style.display = "flex";
             document.getElementById("msgInput").focus();
         }
+
         function cancelReply() {
             currentReply = null;
             document.getElementById("replyPreview").style.display = "none";
@@ -420,5 +443,117 @@
             db.collection("chats").orderBy("timestamp", "asc")
                 .onSnapshot((snapshot) => {
                     const chatList = document.getElementById("messagesList");
+                    if(!chatList) return;
+                    
                     chatList.innerHTML = "";
-                    activeMembers.clear(); // Reset
+                    activeMembers.clear();
+                    
+                    snapshot.forEach((doc) => { 
+                        const data = doc.data();
+                        if(data.user) activeMembers.add(data.user);
+                        renderMessage(data, chatList); 
+                    });
+                    setTimeout(() => { chatList.scrollTop = chatList.scrollHeight; }, 100);
+                }, (error) => { console.error("Error loading chats:", error); });
+        }
+
+        function renderMessage(data, container) {
+            const isMe = data.user === currentUser;
+            const timeDisplay = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
+            const nameColor = isMe ? 'var(--wa-green)' : '#d64646';
+            
+            let content = `<span>${data.text}</span>`;
+            let rawTextForReply = data.text || ""; 
+            
+            if (rawTextForReply.startsWith("data:image")) {
+                content = `<img src="${data.text}" alt="Gambar" onclick="openModal(this.src)">`;
+            }
+
+            let replyHtml = "";
+            if (data.reply) {
+                replyHtml = `
+                    <div class="reply-quote">
+                        <strong>${data.reply.user}</strong>
+                        <span>${data.reply.text}</span>
+                    </div>
+                `;
+            }
+
+            const bubble = `
+                <div class="message ${isMe ? 'sent' : 'received'}">
+                    ${replyHtml}
+                    <div style="font-weight:bold; color: ${nameColor}; font-size:12.5px; margin-bottom:2px;">${data.user}</div>
+                    ${content}
+                    <div class="meta-info">
+                        ${timeDisplay}
+                        ${isMe ? '<i class="fas fa-check-double" style="color:#53bdeb;"></i>' : ''}
+                        <i class="fas fa-reply reply-btn" onclick="setReply('${data.user}', '${rawTextForReply.replace(/'/g, "\\'")}')"></i>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += bubble;
+        }
+
+        function sendMessage(customText = null) {
+            const input = document.getElementById("msgInput");
+            const text = customText || input.value;
+            
+            if (text && text.trim() !== "") {
+                const payload = {
+                    text: text, 
+                    user: currentUser,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                if (currentReply) payload.reply = currentReply;
+
+                db.collection("chats").add(payload).then(() => {
+                    if(!customText) input.value = ""; 
+                    cancelReply();
+                }).catch((err) => {
+                    console.error("Gagal kirim:", err);
+                    alert("Gagal kirim pesan. Cek koneksi internet.");
+                });
+            }
+        }
+
+        // --- UTILS ---
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const themeIcon = document.querySelector('.theme-toggle');
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+                if(themeIcon) themeIcon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                localStorage.setItem('theme', 'light');
+                if(themeIcon) themeIcon.classList.replace('fa-sun', 'fa-moon');
+            }
+        }
+
+        function openModal(src) { 
+            document.getElementById("img01").src = src; 
+            document.getElementById("imageModal").style.display = "flex"; 
+        }
+        function closeModal() { 
+            document.getElementById("imageModal").style.display = "none"; 
+        }
+        function handleImageSelect(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0]; const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image(); img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement("canvas"); const ctx = canvas.getContext("2d");
+                        const maxWidth = 600; 
+                        let width = img.width; let height = img.height;
+                        if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                        canvas.width = width; canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        sendMessage(canvas.toDataURL("image/jpeg", 0.7));
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+</body>
+</html>
