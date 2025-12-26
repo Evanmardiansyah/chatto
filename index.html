@@ -2,11 +2,11 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chatto - WA Style</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* CSS ALA WHATSAPP WEB */
+        /* CSS RESET & VARIABLES */
         :root {
             --wa-header: #00a884;
             --wa-bg: #efeae2;
@@ -24,6 +24,7 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
+            overflow: hidden; /* Mencegah scroll di body utama */
         }
 
         /* Container Utama */
@@ -31,19 +32,21 @@
             display: flex;
             width: 100%;
             height: 100%;
-            max-width: 1400px;
+            max-width: 1600px; /* Lebar maksimal di PC */
             background: white;
-            overflow: hidden;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            position: relative;
         }
 
-        /* Sidebar Kiri */
+        /* --- SIDEBAR (Daftar Teman) --- */
         .sidebar {
             width: 30%;
+            min-width: 300px;
             border-right: 1px solid #e9edef;
             display: flex;
             flex-direction: column;
             background: white;
+            z-index: 2;
         }
 
         .sidebar-header {
@@ -52,176 +55,159 @@
             height: 60px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
             border-right: 1px solid #d1d7db;
         }
 
-        .chat-list {
-            flex: 1;
-            overflow-y: auto;
-        }
+        .chat-list { flex: 1; overflow-y: auto; }
 
         .chat-item {
-            display: flex;
-            align-items: center;
-            padding: 10px 15px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f2f5;
+            display: flex; align-items: center; padding: 12px 15px;
+            cursor: pointer; border-bottom: 1px solid #f0f2f5;
         }
-
         .chat-item:hover { background: #f5f6f6; }
         .chat-item.active { background: #f0f2f5; }
 
         .avatar {
-            width: 45px;
-            height: 45px;
-            background: #dfe5e7;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 15px;
-            color: gray;
+            width: 45px; height: 45px; background: #dfe5e7;
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; margin-right: 15px; color: gray; flex-shrink: 0;
         }
 
-        /* Area Chat Kanan */
+        /* --- AREA CHAT (Kanan) --- */
         .chat-area {
             flex: 1;
             display: flex;
             flex-direction: column;
             background-color: var(--wa-bg);
-            /* Pattern Background WA */
             background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
             background-repeat: repeat;
             position: relative;
+            width: 70%; /* Default width di PC */
         }
 
         .chat-header {
-            background: #f0f2f5;
-            height: 60px;
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            border-left: 1px solid #d1d7db;
+            background: #f0f2f5; height: 60px; padding: 10px 16px;
+            display: flex; align-items: center; border-left: 1px solid #d1d7db;
+            z-index: 10;
         }
 
         .messages-container {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            flex: 1; padding: 20px; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 8px;
+            /* Scroll smooth */
+            scroll-behavior: smooth; 
         }
 
-        /* Bubble Chat */
+        /* Bubble Chat Style */
         .message {
-            max-width: 60%;
-            padding: 8px 12px;
+            max-width: 65%;
+            padding: 6px 10px 8px 10px;
             border-radius: 8px;
-            font-size: 14px;
-            line-height: 1.4;
+            font-size: 14.2px;
+            line-height: 19px;
             position: relative;
             box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
+            word-wrap: break-word; /* Biar teks panjang turun ke bawah */
         }
 
-        .message.sent {
-            align-self: flex-end;
-            background-color: var(--wa-sent);
-        }
-
-        .message.received {
-            align-self: flex-start;
-            background-color: var(--wa-received);
-        }
+        .message.sent { align-self: flex-end; background-color: var(--wa-sent); }
+        .message.received { align-self: flex-start; background-color: var(--wa-received); }
 
         .meta-info {
-            font-size: 10px;
-            color: #667781;
-            text-align: right;
-            margin-top: 4px;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 4px;
-            min-width: 60px; /* Biar jam ga kepotong */
+            font-size: 11px; color: #667781; float: right;
+            margin-left: 10px; margin-top: 4px; display: flex; align-items: center; gap: 3px;
         }
 
-        /* Input Area */
+        /* Input Bar */
         .input-area {
-            height: 62px;
-            background: #f0f2f5;
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            min-height: 62px; background: #f0f2f5; padding: 8px 16px;
+            display: flex; align-items: center; gap: 10px; z-index: 10;
         }
 
         .input-box {
-            flex: 1;
-            padding: 10px;
-            border-radius: 8px;
-            border: none;
-            outline: none;
-            background: white;
+            flex: 1; padding: 12px; border-radius: 8px; border: none; outline: none;
+            background: white; font-size: 15px;
         }
 
         .btn-send {
-            background: none;
-            border: none;
-            color: #54656f;
-            cursor: pointer;
-            font-size: 20px;
+            background: none; border: none; color: #54656f;
+            cursor: pointer; font-size: 24px; padding: 5px;
         }
 
-        /* Login Modal Sederhana */
+        /* --- LOGIN MODAL --- */
         #loginOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 1000;
-            display: flex; justify-content: center; align-items: center;
+            background: #e9edef; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
         .login-box {
-            background: white; padding: 30px; border-radius: 10px; text-align: center;
-            width: 300px;
+            background: white; padding: 40px; border-radius: 0; 
+            text-align: center; width: 100%; max-width: 400px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
         .login-box input {
-            width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd;
+            width: 100%; padding: 15px; margin: 20px 0; 
+            border: 1px solid #ddd; border-radius: 5px; font-size: 16px;
         }
         .login-box button {
             background: var(--wa-header); color: white; border: none;
-            padding: 10px 20px; cursor: pointer; border-radius: 5px; width: 100%;
+            padding: 15px; cursor: pointer; border-radius: 5px; 
+            width: 100%; font-weight: bold; font-size: 16px;
         }
 
-        /* Responsive Mobile */
+        /* --- RESPONSIVE MOBILE (Rahasia agar tampil oke di HP) --- */
         @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .app-container { width: 100%; height: 100vh; }
+            body { background-color: #fff; height: 100%; } /* Hapus background abu di HP */
+            
+            .app-container { 
+                width: 100%; height: 100vh; max-width: none; 
+                box-shadow: none; flex-direction: column;
+            }
+
+            /* Di HP, Sidebar kita sembunyikan dulu biar fokus chat */
+            .sidebar { display: none; } 
+
+            .chat-area { width: 100%; height: 100%; }
+            
+            .message { max-width: 85%; } /* Bubble lebih lebar di HP */
+            
+            .chat-header { padding: 5px 10px; }
+            .input-area { padding: 5px 10px; }
         }
     </style>
 </head>
 <body>
 
     <div id="loginOverlay">
+        <div style="font-size: 40px; color: #00a884; margin-bottom: 20px;">
+            <i class="fab fa-whatsapp"></i>
+        </div>
         <div class="login-box">
-            <h3>Masuk Chatto</h3>
-            <p>Masukkan Nama Panggilan</p>
-            <input type="text" id="usernameInput" placeholder="Nama kamu...">
+            <h3>Masuk ke Chat</h3>
+            <p style="color:gray; margin-top:5px;">Masukkan nama kamu untuk mulai</p>
+            <input type="text" id="usernameInput" placeholder="Ketik nama kamu...">
             <button onclick="loginUser()">MASUK</button>
         </div>
+        <div style="margin-top: 20px; color: gray; font-size: 12px;">From Evan</div>
     </div>
 
     <div class="app-container">
         <div class="sidebar">
             <div class="sidebar-header">
-                <div class="avatar"><i class="fas fa-user"></i></div>
-                <div style="flex:1; margin-left:10px; font-weight:bold;" id="myDisplayName">User</div>
+                <div style="display:flex; align-items:center;">
+                    <div class="avatar"><i class="fas fa-user"></i></div>
+                    <span id="myDisplayName" style="font-weight:bold;">Anda</span>
+                </div>
             </div>
             <div class="chat-list">
                 <div class="chat-item active">
                     <div class="avatar"><i class="fas fa-users"></i></div>
-                    <div>
-                        <div style="font-weight: 500;">Grup Warga GitHub</div>
-                        <div style="font-size: 12px; color: grey;">Klik untuk mulai chat...</div>
+                    <div style="width: 100%;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span style="font-weight: 500;">Grup Warga GitHub</span>
+                            <span style="font-size: 10px; color: #00a884;">Hari ini</span>
+                        </div>
+                        <div style="font-size: 12px; color: grey;">Klik untuk chat</div>
                     </div>
                 </div>
             </div>
@@ -229,21 +215,24 @@
 
         <div class="chat-area">
             <div class="chat-header">
-                <div class="avatar"><i class="fas fa-users"></i></div>
-                <div style="margin-left: 15px;">
-                    <div style="font-weight: bold;">Grup Warga GitHub</div>
-                    <div style="font-size: 12px; color: grey;">Online</div>
+                <div class="avatar" style="width: 35px; height: 35px; margin-right: 10px;">
+                    <i class="fas fa-users" style="font-size: 16px;"></i>
                 </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: bold;">Grup Warga GitHub</div>
+                    <div style="font-size: 11px; color: grey;">Online</div>
+                </div>
+                <div><i class="fas fa-ellipsis-v" style="color: grey;"></i></div>
             </div>
 
             <div class="messages-container" id="messagesList">
                 </div>
 
             <div class="input-area">
-                <i class="far fa-smile btn-send"></i>
-                <i class="fas fa-plus btn-send"></i>
-                <input type="text" class="input-box" id="msgInput" placeholder="Ketik pesan">
-                <button class="btn-send" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+                <i class="far fa-smile btn-send" style="display:none;"></i> <input type="text" class="input-box" id="msgInput" placeholder="Ketik pesan..." autocomplete="off">
+                <button class="btn-send" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane" style="color: #00a884;"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -252,7 +241,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
-        // 1. CONFIG FIREBASE KAMU
+        // CONFIG FIREBASE (PUNYA AGAN)
         const firebaseConfig = {
             apiKey: "AIzaSyBH9Udej6I9JankuJS9J57KPzn8DNUlNYA",
             authDomain: "chatto-82194.firebaseapp.com",
@@ -262,23 +251,27 @@
             appId: "1:169590873334:web:3a8d4581b10aa88096a0d7"
         };
 
-        // 2. INISIALISASI
+        // INISIALISASI
         try {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
-        } catch (e) {
-            console.error("Firebase init error", e);
-        }
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        } catch (e) { console.error("Firebase init error", e); }
         
         const db = firebase.firestore();
-        let currentUser = "";
+        let currentUser = localStorage.getItem("chatUser") || "";
 
-        // LOGIN
+        // CEK LOGIN OTOMATIS
+        if(currentUser) {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('myDisplayName').innerText = currentUser;
+            loadMessages();
+        }
+
+        // LOGIN FUNCTION
         function loginUser() {
             const name = document.getElementById('usernameInput').value;
             if(name.trim() !== "") {
                 currentUser = name;
+                localStorage.setItem("chatUser", currentUser); // Simpan biar ga login terus pas refresh
                 document.getElementById('myDisplayName').innerText = currentUser;
                 document.getElementById('loginOverlay').style.display = 'none';
                 loadMessages();
@@ -287,26 +280,16 @@
             }
         }
 
-        // FORMAT TANGGAL ALA WA
+        // FORMAT WAKTU
         function formatWaTime(timestamp) {
-            // Kalau timestamp null (baru kirim), pakai waktu sekarang
             let date = timestamp ? timestamp.toDate() : new Date();
             let now = new Date();
-
-            // Cek apakah hari ini?
-            let isToday = date.getDate() === now.getDate() &&
-                          date.getMonth() === now.getMonth() &&
-                          date.getFullYear() === now.getFullYear();
-
-            let timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-            if (isToday) {
-                return timeStr; // Cuma jam (Contoh: 14:30)
-            } else {
-                // Tanggal/Bulan/Tahun Jam (Contoh: 26/12/2025 14:30)
-                let dateStr = date.toLocaleDateString([], {day: '2-digit', month: '2-digit', year: 'numeric'});
-                return `${dateStr} ${timeStr}`;
-            }
+            let isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+            let timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false});
+            
+            if (isToday) return timeStr;
+            let dateStr = date.toLocaleDateString([], {day: '2-digit', month: '2-digit', year: '2-digit'});
+            return `${dateStr} ${timeStr}`;
         }
 
         // LOAD PESAN
@@ -319,20 +302,16 @@
                     snapshot.forEach((doc) => {
                         const data = doc.data();
                         const isMe = data.user === currentUser;
-                        
-                        // Panggil fungsi format waktu canggih
                         const timeDisplay = formatWaTime(data.timestamp);
-
-                        // Tentukan warna nama (Saya = Hijau Tua, Orang Lain = Merah)
-                        const nameColor = isMe ? '#064c41' : '#d64646';
+                        const nameColor = isMe ? '#00a884' : '#d64646'; // Warna nama
 
                         const bubble = `
                             <div class="message ${isMe ? 'sent' : 'received'}">
-                                <div style="font-weight:bold; color: ${nameColor}; font-size:12px; margin-bottom:2px;">
+                                <div style="font-weight:bold; color: ${nameColor}; font-size:12.5px; margin-bottom:2px;">
                                     ${data.user}
                                 </div>
-                                ${data.text}
-                                <div class="meta-info">
+                                <span>${data.text}</span>
+                                <div class="meta-info" style="float:right; margin-top:5px; margin-left:10px;">
                                     ${timeDisplay}
                                     ${isMe ? '<i class="fas fa-check-double" style="color: #53bdeb;"></i>' : ''}
                                 </div>
@@ -340,9 +319,11 @@
                         `;
                         chatList.innerHTML += bubble;
                     });
-
+                    
                     // Auto scroll ke bawah
-                    chatList.scrollTop = chatList.scrollHeight;
+                    setTimeout(() => {
+                        chatList.scrollTop = chatList.scrollHeight;
+                    }, 100);
                 });
         }
 
@@ -356,8 +337,6 @@
                     text: text,
                     user: currentUser,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                }).catch((error) => {
-                    console.error("Error sending message: ", error);
                 });
                 input.value = ""; 
             }
@@ -365,9 +344,7 @@
 
         // Enter untuk kirim
         document.getElementById("msgInput").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                sendMessage();
-            }
+            if (event.key === "Enter") sendMessage();
         });
     </script>
 </body>
