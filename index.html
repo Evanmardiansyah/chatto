@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Ala WA - GitHub Pages</title>
+    <title>Chatto - WA Style</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* CSS ALA WHATSAPP WEB */
         :root {
             --wa-header: #00a884;
-            --wa-bg: #efeae2; /* Warna background chat beige */
+            --wa-bg: #efeae2;
             --wa-sidebar: #ffffff;
-            --wa-sent: #d9fdd3; /* Hijau pesan kirim */
-            --wa-received: #ffffff; /* Putih pesan terima */
+            --wa-sent: #d9fdd3;
+            --wa-received: #ffffff;
             --wa-dark: #111b21;
         }
 
@@ -37,7 +37,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
-        /* Sidebar Kiri (List Kontak) */
+        /* Sidebar Kiri */
         .sidebar {
             width: 30%;
             border-right: 1px solid #e9edef;
@@ -90,7 +90,7 @@
             display: flex;
             flex-direction: column;
             background-color: var(--wa-bg);
-            /* Pattern Background WA (Opsional) */
+            /* Pattern Background WA */
             background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
             background-repeat: repeat;
             position: relative;
@@ -193,7 +193,7 @@
 
         /* Responsive Mobile */
         @media (max-width: 768px) {
-            .sidebar { display: none; } /* Hide sidebar on mobile for now */
+            .sidebar { display: none; }
             .app-container { width: 100%; height: 100vh; }
         }
     </style>
@@ -202,7 +202,7 @@
 
     <div id="loginOverlay">
         <div class="login-box">
-            <h3>Masuk Chat</h3>
+            <h3>Masuk Chatto</h3>
             <p>Masukkan Nama Panggilan</p>
             <input type="text" id="usernameInput" placeholder="Nama kamu...">
             <button onclick="loginUser()">MASUK</button>
@@ -251,7 +251,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
-        // --- GANTI BAGIAN INI DENGAN CONFIG FIREBASE KAMU ---
+        // 1. CONFIG FIREBASE (PUNYA AGAN SUDAH SAYA MASUKKAN DISINI)
         const firebaseConfig = {
             apiKey: "AIzaSyBH9Udej6I9JankuJS9J57KPzn8DNUlNYA",
             authDomain: "chatto-82194.firebaseapp.com",
@@ -260,47 +260,56 @@
             messagingSenderId: "169590873334",
             appId: "1:169590873334:web:3a8d4581b10aa88096a0d7"
         };
-        // ----------------------------------------------------
 
-        // Initialize Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+        // 2. INISIALISASI DATABASE
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            // Mencegah error duplikasi inisialisasi
+        } catch (e) {
+            console.error("Firebase init error", e);
         }
+        
         const db = firebase.firestore();
         let currentUser = "";
 
-        // Fungsi Login Sederhana
+        // LOGIN
         function loginUser() {
             const name = document.getElementById('usernameInput').value;
             if(name.trim() !== "") {
                 currentUser = name;
                 document.getElementById('myDisplayName').innerText = currentUser;
                 document.getElementById('loginOverlay').style.display = 'none';
-                loadMessages(); // Mulai load chat setelah login
+                loadMessages();
             } else {
                 alert("Isi nama dulu bos!");
             }
         }
 
-        // Fungsi Load Pesan (Realtime)
+        // LOAD PESAN
         function loadMessages() {
-            // Mengambil data dari koleksi 'chats', urutkan berdasarkan waktu
             db.collection("chats").orderBy("timestamp", "asc")
                 .onSnapshot((snapshot) => {
                     const chatList = document.getElementById("messagesList");
-                    chatList.innerHTML = ""; // Bersihkan dulu
+                    chatList.innerHTML = ""; 
                     
                     snapshot.forEach((doc) => {
                         const data = doc.data();
                         const isMe = data.user === currentUser;
                         
-                        // Render HTML Bubble Chat
+                        // FIX: Cek timestamp biar ga error "Invalid Date"
+                        let timeString = "...";
+                        if (data.timestamp) {
+                            timeString = new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        }
+
                         const bubble = `
                             <div class="message ${isMe ? 'sent' : 'received'}">
                                 ${!isMe ? `<div style="font-weight:bold; color: #d64646; font-size:12px; margin-bottom:2px;">${data.user}</div>` : ''}
                                 ${data.text}
                                 <div class="meta-info">
-                                    ${new Date(data.timestamp?.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    ${timeString}
                                     ${isMe ? '<i class="fas fa-check-double" style="color: #53bdeb;"></i>' : ''}
                                 </div>
                             </div>
@@ -313,7 +322,7 @@
                 });
         }
 
-        // Fungsi Kirim Pesan
+        // KIRIM PESAN
         function sendMessage() {
             const input = document.getElementById("msgInput");
             const text = input.value;
@@ -323,18 +332,20 @@
                     text: text,
                     user: currentUser,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch((error) => {
+                    console.error("Error sending message: ", error);
+                    alert("Gagal kirim pesan. Cek koneksi atau setting database.");
                 });
-                input.value = ""; // Kosongkan input
+                input.value = ""; 
             }
         }
 
-        // Kirim pakai Enter
+        // Enter untuk kirim
         document.getElementById("msgInput").addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
                 sendMessage();
             }
         });
-
     </script>
 </body>
 </html>
