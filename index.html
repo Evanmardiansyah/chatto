@@ -14,20 +14,17 @@
             --msg-sent: #d9fdd3; --msg-received: #ffffff;
             --input-bg: #ffffff; --border-color: #e9edef;
             --wa-green: #00a884;
-            /* IMPROVEMENT: Opacity diturunkan biar lebih 'blend' kayak WA asli */
             --pattern-opacity: 0.15; 
         }
 
         body.dark-mode {
             --body-bg: #111b21; --app-bg: #202c33;
             --wa-header-bg: #202c33;
-            /* IMPROVEMENT: Warna BG gelap sedikit disesuaikan */
             --wa-chat-bg: #0d141a; 
             --text-primary: #e9edef; --text-secondary: #8696a0;
             --msg-sent: #005c4b; --msg-received: #202c33;
             --input-bg: #2a3942; --border-color: #2a3942;
             --wa-green: #00a884;
-             /* IMPROVEMENT: Di dark mode, pattern dibuat sangat samar */
             --pattern-opacity: 0.06;
         }
 
@@ -50,6 +47,11 @@
         .icon-btn { cursor: pointer; color: var(--text-secondary); font-size: 18px; transition: 0.2s; }
         .icon-btn:hover { color: var(--text-primary); }
 
+        /* Style Baru untuk Edit Nama */
+        .user-info-wrapper { display: flex; align-items: center; gap: 8px; }
+        .edit-name-btn { font-size: 12px; color: var(--text-secondary); cursor: pointer; opacity: 0.5; transition: 0.2s; }
+        .edit-name-btn:hover { opacity: 1; color: var(--wa-green); }
+
         .chat-list { flex: 1; overflow-y: auto; }
         .chat-item { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; border-bottom: 1px solid var(--border-color); }
         .chat-item:hover { background: var(--border-color); }
@@ -60,7 +62,6 @@
         .chat-area { flex: 1; display: flex; flex-direction: column; background-color: var(--wa-chat-bg); position: relative; z-index: 1; }
         .chat-area::before {
             content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            /* Link gambar tetap sama, tapi opacity diatur via CSS variable di atas */
             background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
             background-repeat: repeat; opacity: var(--pattern-opacity); z-index: -1; pointer-events: none;
         }
@@ -153,7 +154,10 @@
             <div class="sidebar-header">
                 <div style="display:flex; align-items:center;">
                     <div class="avatar"><i class="fas fa-user"></i></div>
-                    <span id="myDisplayName" style="font-weight:bold;">Anda</span>
+                    <div class="user-info-wrapper">
+                        <span id="myDisplayName" style="font-weight:bold;">Anda</span>
+                        <i class="fas fa-pen edit-name-btn" onclick="editName()" title="Ganti Nama"></i>
+                    </div>
                 </div>
                 <div class="header-icons">
                     <i class="fas fa-moon icon-btn theme-toggle" onclick="toggleTheme()" title="Mode Gelap/Terang"></i>
@@ -227,7 +231,7 @@
             }
         }
 
-        // --- LOGIN LOGIC ---
+        // --- LOGIN & EDIT NAME LOGIC ---
         if(currentUser) {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('myDisplayName').innerText = currentUser;
@@ -236,12 +240,23 @@
         function loginUser() {
             const name = document.getElementById('usernameInput').value;
             if(name.trim()) {
-                currentUser = name;
+                currentUser = name.trim();
                 localStorage.setItem("chatUser", currentUser);
                 document.getElementById('myDisplayName').innerText = currentUser;
                 document.getElementById('loginOverlay').style.display = 'none';
                 loadMessages();
             } else { alert("Isi nama dulu bos!"); }
+        }
+
+        // FUNGSI GANTI NAMA (NEW FEATURE)
+        function editName() {
+            const newName = prompt("Masukkan nama baru kamu:", currentUser);
+            if (newName && newName.trim() !== "") {
+                currentUser = newName.trim();
+                localStorage.setItem("chatUser", currentUser);
+                document.getElementById('myDisplayName').innerText = currentUser;
+                alert("Nama berhasil diganti jadi: " + currentUser);
+            }
         }
 
         // --- AUTO DELETE / SETTINGS LOGIC ---
@@ -265,23 +280,19 @@
             btn.innerText = "Sedang Membersihkan...";
             btn.disabled = true;
 
-            // Hitung tanggal batas (Sekarang - Hari yg dipilih)
             const cutoffDate = new Date();
             cutoffDate.setDate(cutoffDate.getDate() - days);
 
-            // Cari pesan yang lebih tua dari cutoffDate
             db.collection("chats")
                 .where("timestamp", "<", cutoffDate)
                 .get()
                 .then((querySnapshot) => {
-                    const batch = db.batch(); // Pakai batch biar cepat
+                    const batch = db.batch(); 
                     querySnapshot.forEach((doc) => {
                         batch.delete(doc.ref);
                     });
-
-                    // Eksekusi Hapus
                     return batch.commit().then(() => {
-                        return querySnapshot.size; // Return jumlah yang dihapus
+                        return querySnapshot.size; 
                     });
                 })
                 .then((count) => {
